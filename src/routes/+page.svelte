@@ -1,4 +1,5 @@
 <script>
+	import '../app.css';
 	import { parseMarkdown } from '$lib/utils/parseMarkdown.js';
 	import { markdownFromProjects } from '$lib/utils/markdownFromProjects.js';
 	import ProjectSelector from '$lib/components/ProjectSelector.svelte';
@@ -38,51 +39,117 @@
 	}
 
 	function toggleTask(i) {
-		// Create a deep copy of the projects to avoid direct mutation
-		const newProjects = structuredClone(parsedProjects);
-		newProjects[selectedProjectIndex].milestones[selectedMilestoneIndex].tasks[i].done =
-			!newProjects[selectedProjectIndex].milestones[selectedMilestoneIndex].tasks[i].done;
+		// Create a new array of projects
+		const newProjects = parsedProjects.map((project, pIndex) => {
+			if (pIndex !== selectedProjectIndex) return project;
 
-		// Update both the markdown and parsed projects atomically
+			return {
+				...project,
+				milestones: project.milestones.map((milestone, mIndex) => {
+					if (mIndex !== selectedMilestoneIndex) return milestone;
+
+					return {
+						...milestone,
+						tasks: milestone.tasks.map((task, tIndex) => {
+							if (tIndex !== i) return task;
+							return { ...task, done: !task.done };
+						})
+					};
+				})
+			};
+		});
+
+		// Update both the markdown and parsed projects
 		markdown = markdownFromProjects(newProjects);
 		parsedProjects = newProjects;
 	}
 
-	function replaceMarkdown(newMd) {
-		markdown = newMd;
+	function reorderTasks(fromIndex, toIndex) {
+		const newProjects = parsedProjects.map((project, pIndex) => {
+			if (pIndex !== selectedProjectIndex) return project;
+
+			return {
+				...project,
+				milestones: project.milestones.map((milestone, mIndex) => {
+					if (mIndex !== selectedMilestoneIndex) return milestone;
+
+					const newTasks = [...milestone.tasks];
+					const [movedTask] = newTasks.splice(fromIndex, 1);
+					newTasks.splice(toIndex, 0, movedTask);
+
+					return {
+						...milestone,
+						tasks: newTasks
+					};
+				})
+			};
+		});
+
+		// Update both the markdown and parsed projects
+		markdown = markdownFromProjects(newProjects);
+		parsedProjects = newProjects;
 	}
 </script>
 
-<div class="main-container">
-	<div class="column" style="flex:1">
+<div class="app-container">
+	<aside class="sidebar">
 		<ProjectSelector {parsedProjects} {selectedProjectIndex} onselectProject={selectProject} />
 		<MilestoneList {parsedProjects} {selectedProjectIndex} onselectMilestone={selectMilestone} />
-	</div>
-	<div class="column" style="flex:1.5">
+	</aside>
+
+	<main class="main-content">
 		<TaskList
 			{parsedProjects}
 			{selectedProjectIndex}
 			{selectedMilestoneIndex}
 			ontoggleTask={toggleTask}
+			onreorderTasks={reorderTasks}
 		/>
-	</div>
-	<div class="column" style="flex:1">
-		<Chat {markdown} onreplaceMarkdown={replaceMarkdown} />
-	</div>
+	</main>
+
+	<aside class="chat-sidebar">
+		<Chat {markdown} />
+	</aside>
 </div>
 
 <style>
-	.main-container {
-		display: flex;
-		flex-direction: row;
+	.app-container {
+		display: grid;
+		grid-template-columns: 300px 1fr 350px;
 		height: 100vh;
+		background: var(--surface);
 	}
-	.column {
-		border-right: 1px solid #ccc;
-		padding: 1rem;
-		overflow: auto;
+
+	.sidebar,
+	.chat-sidebar {
+		background: var(--background);
+		padding: var(--space-lg);
+		border-right: 1px solid var(--border);
+		overflow-y: auto;
 	}
-	.column:last-child {
-		border-right: none;
+
+	.main-content {
+		padding: var(--space-lg);
+		overflow-y: auto;
+	}
+
+	/* Responsive adjustments */
+	@media (max-width: 1024px) {
+		.app-container {
+			grid-template-columns: 250px 1fr 300px;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.app-container {
+			grid-template-columns: 1fr;
+			grid-template-rows: auto 1fr auto;
+		}
+
+		.sidebar,
+		.chat-sidebar {
+			border-right: none;
+			border-bottom: 1px solid var(--border);
+		}
 	}
 </style>

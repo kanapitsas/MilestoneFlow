@@ -1,42 +1,243 @@
 <script>
 	let { markdown, onreplaceMarkdown } = $props();
-
 	let userInput = $state('');
 	let messages = $state([]);
+	let isLoading = $state(false);
+	let currentResponse = $state('');
 
 	async function sendMessage() {
-		if (!userInput.trim()) return;
-		messages = [...messages, { role: 'user', content: userInput }];
-		const res = await fetch('/api/chat', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ messages, markdown })
-		});
-		const data = await res.json();
-		messages = [...messages, { role: 'assistant', content: data.reply }];
-		userInput = '';
+		if (!userInput.trim() || isLoading) return;
 
-		// Check if the model returned a full markdown update (just a heuristic)
-		// For now, let's say if it returned something starting with '#' might be a full markdown
-		if (data.reply.startsWith('# ')) {
-			onreplaceMarkdown(data.reply);
+		const userMessage = userInput;
+		userInput = '';
+		messages = [...messages, { role: 'user', content: userMessage }];
+		currentResponse = '';
+		isLoading = true;
+
+		try {
+			const res = await fetch('/api/chat', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ messages, markdown })
+			});
+
+			if (!res.ok) throw new Error('Failed to fetch response');
+
+			const reader = res.body.getReader();
+			const decoder = new TextDecoder();
+
+			while (true) {
+				const { value, done } = await reader.read();
+				if (done) break;
+
+				const text = decoder.decode(value);
+				currentResponse += text;
+			}
+
+			messages = [...messages, { role: 'assistant', content: currentResponse }];
+
+			// Check if the response is a full markdown update
+			if (currentResponse.trim().startsWith('# ')) {
+				onreplaceMarkdown(currentResponse);
+			}
+		} catch (error) {
+			console.error('Error:', error);
+			messages = [
+				...messages,
+				{
+					role: 'assistant',
+					content: 'Sorry, there was an error processing your request.'
+				}
+			];
+		} finally {
+			isLoading = false;
+			currentResponse = '';
 		}
 	}
 </script>
 
-<div style="display:flex; flex-direction:column; height:100%;">
-	<div style="flex:1; overflow:auto; border:1px solid #ccc;">
+<div class="chat-container">
+	<div class="messages">
 		{#each messages as m}
-			<p><strong>{m.role}:</strong> {m.content}</p>
+			<div class="message {m.role}">
+				<div class="message-content">
+					{m.content}
+				</div>
+			</div>
 		{/each}
+
+		{#if currentResponse}
+			<div class="message assistant">
+				<div class="message-content">
+					{currentResponse}
+				</div>
+			</div>
+		{/if}
+
+		{#if isLoading && !currentResponse}
+			<div class="message assistant">
+				<div class="message-content loading">
+					<span class="dot"></span>
+					<span class="dot"></span>
+					<span class="dot"></span>
+				</div>
+			</div>
+		{/if}
 	</div>
-	<div style="border-top:1px solid #ccc; padding:0.5rem;">
+
+	<div class="input-area">
 		<input
 			type="text"
 			bind:value={userInput}
 			placeholder="Ask the AI..."
+			disabled={isLoading}
 			onkeyup={(e) => e.key === 'Enter' && sendMessage()}
 		/>
-		<button onclick={sendMessage}>Send</button>
+		<button onclick={sendMessage} disabled={isLoading} aria-label="Send message">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			>
+				<line x1="22" y1="2" x2="11" y2="13"></line>
+				<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+			</svg>
+		</button>
 	</div>
 </div>
+
+<style>
+	.chat-container {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		background: var(--background);
+	}
+
+	.messages {
+		flex: 1;
+		overflow-y: auto;
+		padding: var(--space-md);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-md);
+	}
+
+	.message {
+		max-width: 85%;
+		padding: var(--space-md);
+		border-radius: var(--radius-lg);
+		animation: fadeIn var(--transition);
+	}
+
+	.message.user {
+		align-self: flex-end;
+		background: var(--primary);
+		color: white;
+	}
+
+	.message.assistant {
+		align-self: flex-start;
+		background: var(--surface);
+		color: var(--text);
+	}
+
+	.input-area {
+		border-top: 1px solid var(--border);
+		padding: var(--space-md);
+		display: flex;
+		gap: var(--space-sm);
+	}
+
+	input {
+		flex: 1;
+		padding: var(--space-sm) var(--space-md);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		font-size: 0.9375rem;
+		transition: var(--transition);
+	}
+
+	input:focus {
+		outline: none;
+		border-color: var(--primary);
+		box-shadow: 0 0 0 2px var(--primary-dark);
+	}
+
+	button {
+		padding: var(--space-sm) var(--space-md);
+		background: var(--primary);
+		color: white;
+		border: none;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition: var(--transition);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	button:hover {
+		background: var(--primary-dark);
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	.loading {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: center;
+		align-items: center;
+		padding: 1rem;
+	}
+
+	.dot {
+		width: 8px;
+		height: 8px;
+		background: var(--text-secondary);
+		border-radius: 50%;
+		animation: bounce 1.4s infinite ease-in-out both;
+	}
+
+	.dot:nth-child(1) {
+		animation-delay: -0.32s;
+	}
+	.dot:nth-child(2) {
+		animation-delay: -0.16s;
+	}
+
+	@keyframes bounce {
+		0%,
+		80%,
+		100% {
+			transform: scale(0);
+		}
+		40% {
+			transform: scale(1);
+		}
+	}
+
+	button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	input:disabled {
+		background: var(--surface);
+		cursor: not-allowed;
+	}
+</style>

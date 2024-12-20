@@ -8,7 +8,6 @@ export async function load() {
 
 		// Parse the markdown into projects data
 		const projects = parseMarkdown(raw);
-		console.log(projects);
 		return {
 			raw,
 			projects
