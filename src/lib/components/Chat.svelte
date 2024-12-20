@@ -1,16 +1,13 @@
 <script>
-	let { markdown, onreplaceMarkdown } = $props();
+	let { markdown, onreplaceMarkdown, projectName } = $props();
 	let userInput = $state('');
 	let messages = $state([]);
 	let isLoading = $state(false);
 	let currentResponse = $state('');
 
-	// Helper function to validate markdown structure
 	function isValidMarkdownStructure(text) {
-		// Must start with a project header
 		if (!text.trim().startsWith('# ')) return false;
 
-		// Basic structure validation
 		const lines = text.trim().split('\n');
 		let hasProject = false;
 		let hasMilestone = false;
@@ -19,7 +16,6 @@
 			if (line.startsWith('# ')) hasProject = true;
 			if (line.startsWith('## ')) hasMilestone = true;
 			if (line.startsWith('- [')) {
-				// Must have either ' ' or 'x' between brackets
 				if (!line.match(/- \[[ x]\]/)) return false;
 			}
 		}
@@ -40,7 +36,11 @@
 			const res = await fetch('/api/chat', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ messages, markdown })
+				body: JSON.stringify({
+					messages,
+					markdown,
+					projectName
+				})
 			});
 
 			if (!res.ok) throw new Error('Failed to fetch response');
@@ -94,6 +94,9 @@
 </script>
 
 <div class="chat-container">
+	<div class="chat-header">
+		<h2>Chat about "{projectName}"</h2>
+	</div>
 	<div class="messages">
 		{#each messages as m}
 			<div class="message {m.role}">
@@ -276,5 +279,16 @@
 	input:disabled {
 		background: var(--surface);
 		cursor: not-allowed;
+	}
+	.chat-header {
+		padding: var(--space-md);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.chat-header h2 {
+		font-size: 1rem;
+		font-weight: 500;
+		color: var(--text-secondary);
+		margin: 0;
 	}
 </style>

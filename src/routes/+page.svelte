@@ -92,6 +92,24 @@
 	function replaceMarkdown(newMarkdown) {
 		markdown = newMarkdown;
 	}
+	function getCurrentProjectMarkdown() {
+		const project = parsedProjects[selectedProjectIndex];
+		if (!project) return '';
+
+		return markdownFromProjects([project]);
+	}
+
+	// Helper to replace current project in the full markdown
+	function replaceCurrentProject(newProjectMarkdown) {
+		const newProject = parseMarkdown(newProjectMarkdown)[0];
+		if (!newProject) return;
+
+		const updatedProjects = parsedProjects.map((p, i) =>
+			i === selectedProjectIndex ? newProject : p
+		);
+
+		markdown = markdownFromProjects(updatedProjects);
+	}
 </script>
 
 <div class="app-container">
@@ -111,7 +129,11 @@
 	</main>
 
 	<aside class="chat-sidebar">
-		<Chat {markdown} onreplaceMarkdown={replaceMarkdown} />
+		<Chat
+			markdown={getCurrentProjectMarkdown()}
+			onreplaceMarkdown={replaceCurrentProject}
+			projectName={parsedProjects[selectedProjectIndex]?.title ?? ''}
+		/>
 	</aside>
 </div>
 

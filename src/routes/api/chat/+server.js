@@ -6,9 +6,9 @@ const openai = new OpenAI({
 	apiKey: OPENAI_API_KEY
 });
 
-const SYSTEM_PROMPT = `You help users manage their projects, milestones, and tasks.
+const SYSTEM_PROMPT = `You help users manage their project milestones and tasks. You are currently focused on a single project and should only modify that project's structure.
 
-When the user requests changes to the project structure (like adding, removing, or modifying projects, milestones, or tasks), respond with a complete markdown document that represents the entire updated structure. The document must follow this exact format:
+When the user requests changes to the project structure (like adding, removing, or modifying milestones or tasks), respond with a complete markdown document that represents the updated structure for this project only. The document must follow this exact format:
 
 # Project Name
 ## Milestone Name
@@ -17,21 +17,26 @@ When the user requests changes to the project structure (like adding, removing, 
 
 ## Another Milestone
 - [ ] Another task
-etc.
 
 For all other queries (like questions about the project or general assistance), respond with normal conversational text. Keep these responses concise and friendly.
 
-Important: Only respond with a markdown document when the user explicitly requests changes to the project structure.`;
+Important:
+- Only respond with a markdown document when the user explicitly requests changes to the project structure
+- Never modify the project name
+- Only work with the current project, don't reference or try to modify other projects`;
 
 export async function POST({ request }) {
 	try {
-		const { messages, markdown } = await request.json();
+		const { messages, markdown, projectName } = await request.json();
 
 		const completion = await openai.chat.completions.create({
-			model: 'gpt-4o-mini',
+			model: 'gpt-4-mini',
 			messages: [
 				{ role: 'system', content: SYSTEM_PROMPT },
-				{ role: 'system', content: `Current project structure:\n${markdown}` },
+				{
+					role: 'system',
+					content: `You are working with the project "${projectName}". Current project structure:\n${markdown}`
+				},
 				...messages
 			],
 			temperature: 0.7,
