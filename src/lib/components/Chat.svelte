@@ -11,7 +11,7 @@
 
 	// Helper function to validate markdown structure
 	function isValidMarkdownStructure(text) {
-		if (!text.trim().startsWith('# ')) return false;
+		if (!text.includes('# ')) return false;
 
 		const lines = text.trim().split('\n');
 		let hasProject = false;
@@ -26,6 +26,33 @@
 		}
 
 		return hasProject && hasMilestone;
+	}
+
+	// Helper function to extract markdown structure
+	function extractMarkdownStructure(text) {
+		const lines = text.split('\n');
+		let markdownStartIndex = -1;
+
+		// Find where the markdown structure starts
+		for (let i = 0; i < lines.length; i++) {
+			if (lines[i].startsWith('# ')) {
+				const remainingText = lines.slice(i).join('\n');
+				if (isValidMarkdownStructure(remainingText)) {
+					markdownStartIndex = i;
+					break;
+				}
+			}
+		}
+
+		if (markdownStartIndex === -1) return null;
+
+		const conversationalPart = lines.slice(0, markdownStartIndex).join('\n').trim();
+		const markdownPart = lines.slice(markdownStartIndex).join('\n').trim();
+
+		return {
+			markdown: markdownPart,
+			message: conversationalPart || "I've updated the project structure as requested."
+		};
 	}
 
 	// Update project chat history
@@ -69,25 +96,14 @@
 				currentResponse += text;
 			}
 
-			// When streaming is complete, check if the response is a valid markdown update
-			if (isValidMarkdownStructure(currentResponse)) {
-				const updatedMessages = [
-					...newMessages,
-					{
-						role: 'assistant',
-						content: "I've updated the project structure as requested."
-					}
-				];
+			// When streaming is complete
+			const extracted = extractMarkdownStructure(currentResponse);
+			if (extracted) {
+				const updatedMessages = [...newMessages, { role: 'assistant', content: extracted.message }];
 				updateProjectChat(updatedMessages);
-				onreplaceMarkdown(currentResponse);
+				onreplaceMarkdown(extracted.markdown);
 			} else {
-				const updatedMessages = [
-					...newMessages,
-					{
-						role: 'assistant',
-						content: currentResponse
-					}
-				];
+				const updatedMessages = [...newMessages, { role: 'assistant', content: currentResponse }];
 				updateProjectChat(updatedMessages);
 			}
 		} catch (error) {
