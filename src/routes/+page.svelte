@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { parseMarkdown } from '$lib/utils/parseMarkdown.js';
 	import { markdownFromProjects } from '$lib/utils/markdownFromProjects.js';
+	import { saveProjects } from '$lib/utils/saveProjects.js';
 	import MilestoneList from '$lib/components/MilestoneList.svelte';
 	import TaskList from '$lib/components/TaskList.svelte';
 	import Chat from '$lib/components/Chat.svelte';
@@ -27,8 +28,10 @@
 	);
 
 	// Actions
-	function updateProjects(newProjects) {
-		markdown = markdownFromProjects(newProjects);
+	async function updateProjects(newProjects) {
+		const newMarkdown = markdownFromProjects(newProjects);
+		markdown = newMarkdown;
+		await saveProjects(newMarkdown);
 	}
 
 	// Helper function to update tasks in current milestone
@@ -68,12 +71,14 @@
 		);
 	}
 
-	function replaceCurrentProject(newProjectMarkdown) {
+	async function replaceCurrentProject(newProjectMarkdown) {
 		const [newProject] = parseMarkdown(newProjectMarkdown);
 		if (!newProject) return;
 
 		const newProjects = projects.map((p, i) => (i === currentProjectIndex ? newProject : p));
-		updateProjects(newProjects);
+		const newMarkdown = markdownFromProjects(newProjects);
+		markdown = newMarkdown;
+		await saveProjects(newMarkdown);
 	}
 </script>
 
