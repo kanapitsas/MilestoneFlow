@@ -6,19 +6,22 @@
 	import TaskList from '$lib/components/TaskList.svelte';
 	import Chat from '$lib/components/Chat.svelte';
 
-	// Props from load
-	let { raw, projects } = $props();
+	// Get data from SvelteKit's load function
+	let { data } = $props();
 
-	// Runes mode reactivity
-	let markdown = $state(raw);
-	let parsedProjects = $state(projects);
-
+	// Initialize state with data from server
+	let markdown = $state(data.raw);
+	let parsedProjects = $state(data.projects);
 	let selectedProjectIndex = $state(0);
 	let selectedMilestoneIndex = $state(0);
 
+	// Only update parsedProjects when markdown changes
 	$effect(() => {
-		// Whenever markdown changes, re-parse
 		parsedProjects = parseMarkdown(markdown);
+	});
+
+	// Separate effect for index validation
+	$effect(() => {
 		// Ensure indexes are in range
 		if (selectedProjectIndex >= parsedProjects.length) selectedProjectIndex = 0;
 		const proj = parsedProjects[selectedProjectIndex];
@@ -35,14 +38,17 @@
 	}
 
 	function toggleTask(i) {
-		// Toggle a task and update markdown
-		parsedProjects[selectedProjectIndex].milestones[selectedMilestoneIndex].tasks[i].done =
-			!parsedProjects[selectedProjectIndex].milestones[selectedMilestoneIndex].tasks[i].done;
-		markdown = markdownFromProjects(parsedProjects);
+		// Create a deep copy of the projects to avoid direct mutation
+		const newProjects = structuredClone(parsedProjects);
+		newProjects[selectedProjectIndex].milestones[selectedMilestoneIndex].tasks[i].done =
+			!newProjects[selectedProjectIndex].milestones[selectedMilestoneIndex].tasks[i].done;
+
+		// Update both the markdown and parsed projects atomically
+		markdown = markdownFromProjects(newProjects);
+		parsedProjects = newProjects;
 	}
 
 	function replaceMarkdown(newMd) {
-		// Called by chat if model returns a new markdown
 		markdown = newMd;
 	}
 </script>

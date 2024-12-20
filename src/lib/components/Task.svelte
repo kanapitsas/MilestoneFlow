@@ -1,42 +1,70 @@
 <script>
-	let { markdown, onreplaceMarkdown } = $props();
+	let { task, index, ontoggleTask } = $props();
 
-	let userInput = $state('');
-	let messages = $state([]);
+	// Add hover state for better UX
+	let isHovered = $state(false);
 
-	async function sendMessage() {
-		if (!userInput.trim()) return;
-		messages = [...messages, { role: 'user', content: userInput }];
-		const res = await fetch('/api/chat', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ messages, markdown })
-		});
-		const data = await res.json();
-		messages = [...messages, { role: 'assistant', content: data.reply }];
-		userInput = '';
-
-		// Check if the model returned a full markdown update (just a heuristic)
-		// For now, let's say if it returned something starting with '#' might be a full markdown
-		if (data.reply.startsWith('# ')) {
-			onreplaceMarkdown(data.reply);
-		}
-	}
+	// Compute completion time
+	let completedAt = $derived(task.done ? new Date().toLocaleString() : null);
 </script>
 
-<div style="display:flex; flex-direction:column; height:100%;">
-	<div style="flex:1; overflow:auto; border:1px solid #ccc;">
-		{#each messages as m}
-			<p><strong>{m.role}:</strong> {m.content}</p>
-		{/each}
-	</div>
-	<div style="border-top:1px solid #ccc; padding:0.5rem;">
+<li
+	class="task"
+	class:completed={task.done}
+	class:hover={isHovered}
+	onmouseenter={() => (isHovered = true)}
+	onmouseleave={() => (isHovered = false)}
+>
+	<div class="task-content">
 		<input
-			type="text"
-			bind:value={userInput}
-			placeholder="Ask the AI..."
-			onkeyup={(e) => e.key === 'Enter' && sendMessage()}
+			type="checkbox"
+			aria-label={`Complete task: ${task.name}`}
+			checked={task.done}
+			onchange={() => ontoggleTask(index)}
 		/>
-		<button onclick={sendMessage}>Send</button>
+		<span class="task-name" class:strike={task.done}>
+			{task.name}
+		</span>
 	</div>
-</div>
+
+	{#if task.done}
+		<span class="completion-time">
+			Completed: {completedAt}
+		</span>
+	{/if}
+</li>
+
+<style>
+	.task {
+		padding: 0.5rem;
+		border-radius: 4px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		transition: background-color 0.2s;
+	}
+
+	.task:hover {
+		background-color: #f5f5f5;
+	}
+
+	.task-content {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.strike {
+		text-decoration: line-through;
+		color: #666;
+	}
+
+	.completion-time {
+		font-size: 0.8rem;
+		color: #666;
+	}
+
+	.completed {
+		background-color: #f8f8f8;
+	}
+</style>
