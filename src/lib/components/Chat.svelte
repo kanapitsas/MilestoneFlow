@@ -5,6 +5,28 @@
 	let isLoading = $state(false);
 	let currentResponse = $state('');
 
+	// Helper function to validate markdown structure
+	function isValidMarkdownStructure(text) {
+		// Must start with a project header
+		if (!text.trim().startsWith('# ')) return false;
+
+		// Basic structure validation
+		const lines = text.trim().split('\n');
+		let hasProject = false;
+		let hasMilestone = false;
+
+		for (const line of lines) {
+			if (line.startsWith('# ')) hasProject = true;
+			if (line.startsWith('## ')) hasMilestone = true;
+			if (line.startsWith('- [')) {
+				// Must have either ' ' or 'x' between brackets
+				if (!line.match(/- \[[ x]\]/)) return false;
+			}
+		}
+
+		return hasProject && hasMilestone;
+	}
+
 	async function sendMessage() {
 		if (!userInput.trim() || isLoading) return;
 
@@ -29,16 +51,31 @@
 			while (true) {
 				const { value, done } = await reader.read();
 				if (done) break;
-
 				const text = decoder.decode(value);
 				currentResponse += text;
 			}
 
-			messages = [...messages, { role: 'assistant', content: currentResponse }];
-
-			// Check if the response is a full markdown update
-			if (currentResponse.trim().startsWith('# ')) {
+			// When streaming is complete, check if the response is a valid markdown update
+			if (isValidMarkdownStructure(currentResponse)) {
+				// Add confirmation message to chat
+				messages = [
+					...messages,
+					{
+						role: 'assistant',
+						content: "I've updated the project structure as requested."
+					}
+				];
+				// Update the markdown
 				onreplaceMarkdown(currentResponse);
+			} else {
+				// Regular chat message
+				messages = [
+					...messages,
+					{
+						role: 'assistant',
+						content: currentResponse
+					}
+				];
 			}
 		} catch (error) {
 			console.error('Error:', error);

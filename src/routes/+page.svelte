@@ -89,6 +89,9 @@
 		markdown = markdownFromProjects(newProjects);
 		parsedProjects = newProjects;
 	}
+	function replaceMarkdown(newMarkdown) {
+		markdown = newMarkdown;
+	}
 </script>
 
 <div class="app-container">
@@ -108,7 +111,7 @@
 	</main>
 
 	<aside class="chat-sidebar">
-		<Chat {markdown} />
+		<Chat {markdown} onreplaceMarkdown={replaceMarkdown} />
 	</aside>
 </div>
 

@@ -6,22 +6,29 @@ const openai = new OpenAI({
 	apiKey: OPENAI_API_KEY
 });
 
-const SYSTEM_PROMPT = `You are a helpful project management assistant. You can help users manage their projects, milestones, and tasks.
-When asked to modify the project structure, return a complete markdown document starting with # that follows this format:
+const SYSTEM_PROMPT = `You help users manage their projects, milestones, and tasks.
+
+When the user requests changes to the project structure (like adding, removing, or modifying projects, milestones, or tasks), respond with a complete markdown document that represents the entire updated structure. The document must follow this exact format:
 
 # Project Name
 ## Milestone Name
 - [ ] Task 1
 - [x] Task 2 (x means completed)
 
-Keep your regular responses concise and friendly.`;
+## Another Milestone
+- [ ] Another task
+etc.
+
+For all other queries (like questions about the project or general assistance), respond with normal conversational text. Keep these responses concise and friendly.
+
+Important: Only respond with a markdown document when the user explicitly requests changes to the project structure.`;
 
 export async function POST({ request }) {
 	try {
 		const { messages, markdown } = await request.json();
 
 		const completion = await openai.chat.completions.create({
-			model: 'gpt-4',
+			model: 'gpt-4o-mini',
 			messages: [
 				{ role: 'system', content: SYSTEM_PROMPT },
 				{ role: 'system', content: `Current project structure:\n${markdown}` },
