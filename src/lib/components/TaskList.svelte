@@ -1,5 +1,7 @@
 <script>
+	import { fade, fly } from 'svelte/transition';
 	import Task from './Task.svelte';
+	import ColumnHeader from './ColumnHeader.svelte';
 	let {
 		parsedProjects,
 		selectedProjectIndex,
@@ -12,30 +14,57 @@
 		parsedProjects[selectedProjectIndex]?.milestones[selectedMilestoneIndex]?.tasks ?? []
 	);
 
+	let draggingIndex = $state(null);
+
+	function handleDragStart(index) {
+		draggingIndex = index;
+	}
+
+	function handleDragEnd() {
+		draggingIndex = null;
+	}
+
 	function handleDrop(e, dropIndex) {
 		e.preventDefault();
-		const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+		if (draggingIndex === null) return;
+		const dragIndex = draggingIndex;
 		if (dragIndex !== dropIndex) {
 			onreorderTasks(dragIndex, dropIndex);
 		}
+		draggingIndex = null;
 	}
 </script>
 
-<ul class="task-list">
-	{#each tasks as task, i}
-		<div
-			class="task-wrapper"
-			role="listitem"
-			aria-label="Drop zone for task reordering"
-			ondragover={(e) => e.preventDefault()}
-			ondrop={(e) => handleDrop(e, i)}
-		>
-			<Task {task} index={i} {ontoggleTask} />
-		</div>
-	{/each}
-</ul>
+<div class="task-list-container">
+	<ColumnHeader title="Tasks" />
+
+	<ul class="task-list">
+		{#each tasks as task, i}
+			<div
+				class="task-wrapper {draggingIndex === i ? 'dragging' : ''}"
+				draggable="true"
+				ondragstart={() => handleDragStart(i)}
+				ondragend={handleDragEnd}
+				ondragover={(e) => e.preventDefault()}
+				ondrop={(e) => handleDrop(e, i)}
+				in:fade={{ duration: 300 }}
+				out:fly={{ y: 20, duration: 300 }}
+				role="listitem"
+				aria-label="Draggable task {i + 1}"
+			>
+				<Task {task} index={i} {ontoggleTask} />
+			</div>
+		{/each}
+	</ul>
+</div>
 
 <style>
+	.task-list-container {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+
 	.task-list {
 		list-style: none;
 		padding: 0;
@@ -44,21 +73,11 @@
 
 	.task-wrapper {
 		position: relative;
-		padding: 4px 0;
+		transition: transform 0.3s ease;
 	}
 
-	.task-wrapper::before {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--primary);
-		opacity: 0;
-		transition: opacity var(--transition);
-	}
-
-	.task-wrapper:hover::before {
+	.task-wrapper.dragging {
 		opacity: 0.5;
+		transform: scale(0.98);
 	}
 </style>

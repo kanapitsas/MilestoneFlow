@@ -1,57 +1,49 @@
 <script>
 	let { task, index, ontoggleTask } = $props();
-	let isHovered = $state(false);
 </script>
 
 <li
-	class="task"
-	class:completed={task.done}
-	class:hover={isHovered}
-	onmouseenter={() => (isHovered = true)}
-	onmouseleave={() => (isHovered = false)}
+	class="task {task.done ? 'completed' : ''}"
 	draggable="true"
 	ondragstart={(e) => e.dataTransfer.setData('text/plain', index)}
 	role="listitem"
-	aria-label={`Task: ${task.name}${task.done ? ' (completed)' : ''}`}
 >
-	<div class="task-content">
-		<div class="checkbox-wrapper">
-			<input
-				type="checkbox"
-				id={`task-${index}`}
-				checked={task.done}
-				onchange={() => ontoggleTask(index)}
-				aria-label={`Mark task "${task.name}" as ${task.done ? 'incomplete' : 'complete'}`}
-			/>
-			<label for={`task-${index}`} class="custom-checkbox"></label>
+	<button onclick={() => ontoggleTask(index)}>
+		<div class="task-content">
+			<div class="checkbox-wrapper">
+				<input
+					type="checkbox"
+					id={`task-${index}`}
+					checked={task.done}
+					onchange={() => ontoggleTask(index)}
+				/>
+				<label for={`task-${index}`} class="custom-checkbox"></label>
+			</div>
+			<span class="task-name">
+				{task.name}
+			</span>
 		</div>
-		<span class="task-name" class:strike={task.done}>
-			{task.name}
-		</span>
-	</div>
+	</button>
 </li>
 
 <style>
 	.task {
+		border-bottom: 1px solid var(--border);
+	}
+
+	button {
+		width: 100%;
 		padding: var(--space-md);
-		border-radius: var(--radius-md);
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
 		background: var(--background);
-		border: 1px solid var(--border);
-		margin-bottom: var(--space-sm);
+		border: none;
+		cursor: pointer;
 		transition: var(--transition);
-		cursor: grab;
+		text-align: left;
+		display: block;
 	}
 
-	.task:hover {
+	button:hover {
 		background: var(--surface);
-		transform: translateY(-1px);
-	}
-
-	.task:active {
-		cursor: grabbing;
 	}
 
 	.task-content {
@@ -100,12 +92,46 @@
 		font-size: 0.9375rem;
 	}
 
-	.strike {
+	.completed .task-name {
 		text-decoration: line-through;
 		color: var(--text-disabled);
+		transition:
+			color 0.3s ease,
+			text-decoration 0.3s ease;
 	}
 
-	.completed {
-		background: var(--surface);
+	.custom-checkbox {
+		display: inline-block;
+		width: 18px;
+		height: 18px;
+		border: 2px solid var(--border);
+		border-radius: 50%;
+		position: relative;
+		cursor: pointer;
+		transition:
+			background-color 0.3s ease,
+			border-color 0.3s ease;
+	}
+
+	.custom-checkbox::after {
+		/* Existing styles */
+		opacity: 0;
+		transition: opacity 0.3s ease;
+	}
+
+	input[type='checkbox']:checked + .custom-checkbox {
+		background: var(--success);
+		border-color: var(--success);
+	}
+
+	input[type='checkbox']:checked + .custom-checkbox::after {
+		content: '✓';
+		position: absolute;
+		color: var(--background);
+		opacity: 1;
+		font-size: 12px;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 	}
 </style>

@@ -2,10 +2,10 @@
 	import '../app.css';
 	import { parseMarkdown } from '$lib/utils/parseMarkdown.js';
 	import { markdownFromProjects } from '$lib/utils/markdownFromProjects.js';
-	import ProjectSelector from '$lib/components/ProjectSelector.svelte';
 	import MilestoneList from '$lib/components/MilestoneList.svelte';
 	import TaskList from '$lib/components/TaskList.svelte';
 	import Chat from '$lib/components/Chat.svelte';
+	import Navbar from '$lib/components/Navbar.svelte';
 
 	let { data } = $props();
 	let markdown = $state(data.raw);
@@ -77,61 +77,70 @@
 	}
 </script>
 
-<div class="app-container">
-	<aside class="sidebar">
-		<ProjectSelector
-			parsedProjects={projects}
-			selectedProjectIndex={currentProjectIndex}
-			onselectProject={(i) => {
-				selectedProjectIndex = i;
-				selectedMilestoneIndex = 0;
-			}}
-		/>
-		<MilestoneList
-			parsedProjects={projects}
-			selectedProjectIndex={currentProjectIndex}
-			onselectMilestone={(i) => (selectedMilestoneIndex = i)}
-		/>
-	</aside>
+<div class="app">
+	<Navbar
+		parsedProjects={projects}
+		selectedProjectIndex={currentProjectIndex}
+		onselectProject={(i) => {
+			selectedProjectIndex = i;
+			selectedMilestoneIndex = 0;
+		}}
+	/>
+	<div class="app-container">
+		<aside class="sidebar">
+			<MilestoneList
+				parsedProjects={projects}
+				selectedProjectIndex={currentProjectIndex}
+				onselectMilestone={(i) => (selectedMilestoneIndex = i)}
+			/>
+		</aside>
 
-	<main class="main-content">
-		<TaskList
-			parsedProjects={projects}
-			selectedProjectIndex={currentProjectIndex}
-			selectedMilestoneIndex={currentMilestoneIndex}
-			ontoggleTask={toggleTask}
-			onreorderTasks={reorderTasks}
-		/>
-	</main>
+		<main class="main-content">
+			<TaskList
+				parsedProjects={projects}
+				selectedProjectIndex={currentProjectIndex}
+				selectedMilestoneIndex={currentMilestoneIndex}
+				ontoggleTask={toggleTask}
+				onreorderTasks={reorderTasks}
+			/>
+		</main>
 
-	<aside class="chat-sidebar">
-		<Chat
-			markdown={markdownFromProjects([currentProject])}
-			onreplaceMarkdown={replaceCurrentProject}
-			projectName={currentProject?.title ?? ''}
-		/>
-	</aside>
+		<aside class="chat-sidebar">
+			<Chat
+				markdown={markdownFromProjects([currentProject])}
+				onreplaceMarkdown={replaceCurrentProject}
+				projectName={currentProject?.title ?? ''}
+			/>
+		</aside>
+	</div>
 </div>
 
 <style>
-	.app-container {
-		display: grid;
-		grid-template-columns: 300px 1fr 350px;
+	.app {
 		height: 100vh;
-		background: var(--surface);
+		display: flex;
+		flex-direction: column;
+		max-width: 100vw;
+		overflow: hidden;
+	}
+
+	.app-container {
+		flex: 1;
+		display: grid;
+		grid-template-columns: 350px 1fr 400px;
+		overflow: hidden;
 	}
 
 	.sidebar,
+	.main-content,
 	.chat-sidebar {
 		background: var(--background);
-		padding: var(--space-lg);
 		border-right: 1px solid var(--border);
 		overflow-y: auto;
 	}
 
 	.main-content {
-		padding: var(--space-lg);
-		overflow-y: auto;
+		padding: 0; /* Remove padding */
 	}
 
 	/* Responsive adjustments */

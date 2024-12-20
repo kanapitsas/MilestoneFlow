@@ -2,7 +2,7 @@
 	/* Colors */
 	--primary: #3b82f6;
 	--primary-dark: #2563eb;
-	--success: #22c55e;
+	--success: #32a852;
 	--background: #ffffff;
 	--surface: #f8fafc;
 	--surface-hover: #f1f5f9;
@@ -10,6 +10,8 @@
 	--text: #1e293b;
 	--text-secondary: #64748b;
 	--text-disabled: #94a3b8;
+	--completion-bg: #f1f5f9;
+	--header-bg: #f8fafc;
 
 	/* Spacing */
 	--space-xs: 0.25rem;
@@ -33,13 +35,15 @@
 
 /* Global styles */
 body {
+	margin: 0;
 	font-family:
 		system-ui,
 		-apple-system,
 		sans-serif;
 	color: var(--text);
-	background: var(--background);
+	background: var(--surface);
 	line-height: 1.5;
+	overflow: hidden; /* Prevent body scrolling */
 }
 
 button,

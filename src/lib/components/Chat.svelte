@@ -1,4 +1,5 @@
 <script>
+	import ColumnHeader from './ColumnHeader.svelte';
 	let { markdown, onreplaceMarkdown, projectName } = $props();
 	let userInput = $state('');
 	let projectChats = $state({});
@@ -119,8 +120,7 @@
 </script>
 
 <div class="chat-container">
-	<div class="chat-header">
-		<h2>Chat about "{projectName}"</h2>
+	<ColumnHeader title={`Chat about "${projectName}"`}>
 		{#if messages.length > 1}
 			<button
 				class="clear-chat"
@@ -130,11 +130,12 @@
 				Clear Chat
 			</button>
 		{/if}
-	</div>
+	</ColumnHeader>
 
 	<div class="messages">
 		{#each messages as m}
 			<div class="message {m.role}">
+				<div class="message-role">{m.role}</div>
 				<div class="message-content">
 					{m.content}
 				</div>
@@ -193,34 +194,46 @@
 		flex-direction: column;
 		height: 100%;
 		background: var(--background);
+		max-width: 100%;
+		overflow: hidden; /* Prevent horizontal scroll */
 	}
 
 	.messages {
 		flex: 1;
 		overflow-y: auto;
-		padding: var(--space-md);
+		overflow-x: hidden; /* Prevent horizontal scroll */
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-md);
 	}
 
 	.message {
-		max-width: 85%;
+		width: 100%;
 		padding: var(--space-md);
-		border-radius: var(--radius-lg);
-		animation: fadeIn var(--transition);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.message-content {
+		word-break: break-word; /* Prevent text from causing horizontal scroll */
+		overflow-wrap: break-word;
 	}
 
 	.message.user {
-		align-self: flex-end;
-		background: var(--primary);
-		color: white;
+		background: var(--surface);
 	}
 
-	.message.assistant {
-		align-self: flex-start;
-		background: var(--surface);
-		color: var(--text);
+	.message-role {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: var(--space-xs);
+	}
+
+	.message.user .message-role {
+		color: var(--primary);
+	}
+
+	.message.assistant .message-role {
+		color: var(--text-secondary);
 	}
 
 	.input-area {
@@ -314,24 +327,6 @@
 	input:disabled {
 		background: var(--surface);
 		cursor: not-allowed;
-	}
-	.chat-header {
-		padding: var(--space-md);
-		border-bottom: 1px solid var(--border);
-	}
-
-	.chat-header h2 {
-		font-size: 1rem;
-		font-weight: 500;
-		color: var(--text-secondary);
-		margin: 0;
-	}
-	.chat-header {
-		padding: var(--space-md);
-		border-bottom: 1px solid var(--border);
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
 	}
 
 	.clear-chat {
