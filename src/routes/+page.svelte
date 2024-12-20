@@ -7,122 +7,96 @@
 	import TaskList from '$lib/components/TaskList.svelte';
 	import Chat from '$lib/components/Chat.svelte';
 
-	// Get data from server-side load function
 	let { data } = $props();
-
-	// Initialize state with data from server
 	let markdown = $state(data.raw);
-	let parsedProjects = $derived(parseMarkdown(markdown));
 	let selectedProjectIndex = $state(0);
 	let selectedMilestoneIndex = $state(0);
 
-	// Derive valid indices directly, removing the intermediate variables
+	// Core derived values
+	let projects = $derived(parseMarkdown(markdown));
 	let currentProjectIndex = $derived(
-		selectedProjectIndex >= parsedProjects.length ? 0 : selectedProjectIndex
+		Math.min(selectedProjectIndex, projects.length - 1, Math.max(0, selectedProjectIndex))
 	);
-
+	let currentProject = $derived(projects[currentProjectIndex]);
 	let currentMilestoneIndex = $derived(
-		parsedProjects[currentProjectIndex]?.milestones.length <= selectedMilestoneIndex
-			? 0
-			: selectedMilestoneIndex
+		Math.min(
+			selectedMilestoneIndex,
+			(currentProject?.milestones.length ?? 1) - 1,
+			Math.max(0, selectedMilestoneIndex)
+		)
 	);
 
-	function selectProject(i) {
-		selectedProjectIndex = i;
-		selectedMilestoneIndex = 0;
-	}
-
-	function selectMilestone(i) {
-		selectedMilestoneIndex = i;
-	}
-
-	function toggleTask(i) {
-		// Create a new array of projects
-		const newProjects = parsedProjects.map((project, pIndex) => {
-			if (pIndex !== selectedProjectIndex) return project;
-
-			return {
-				...project,
-				milestones: project.milestones.map((milestone, mIndex) => {
-					if (mIndex !== selectedMilestoneIndex) return milestone;
-
-					return {
-						...milestone,
-						tasks: milestone.tasks.map((task, tIndex) => {
-							if (tIndex !== i) return task;
-							return { ...task, done: !task.done };
-						})
-					};
-				})
-			};
-		});
-
-		// Update both the markdown and parsed projects
+	// Actions
+	function updateProjects(newProjects) {
 		markdown = markdownFromProjects(newProjects);
+	}
+
+	// Helper function to update tasks in current milestone
+	function updateCurrentMilestoneTasks(taskUpdater) {
+		const project = projects[currentProjectIndex];
+		if (!project) return;
+
+		const milestone = project.milestones[currentMilestoneIndex];
+		if (!milestone) return;
+
+		const newTasks = taskUpdater(milestone.tasks);
+
+		const newProjects = projects.map((p, i) =>
+			i !== currentProjectIndex
+				? p
+				: {
+						...p,
+						milestones: p.milestones.map((m, j) =>
+							j !== currentMilestoneIndex ? m : { ...m, tasks: newTasks }
+						)
+					}
+		);
+
+		updateProjects(newProjects);
+	}
+
+	// Simplified task functions using the helper
+	function toggleTask(taskIndex) {
+		updateCurrentMilestoneTasks((tasks) =>
+			tasks.map((task, index) => (index !== taskIndex ? task : { ...task, done: !task.done }))
+		);
 	}
 
 	function reorderTasks(fromIndex, toIndex) {
-		const newProjects = parsedProjects.map((project, pIndex) => {
-			if (pIndex !== selectedProjectIndex) return project;
-
-			return {
-				...project,
-				milestones: project.milestones.map((milestone, mIndex) => {
-					if (mIndex !== selectedMilestoneIndex) return milestone;
-
-					const newTasks = [...milestone.tasks];
-					const [movedTask] = newTasks.splice(fromIndex, 1);
-					newTasks.splice(toIndex, 0, movedTask);
-
-					return {
-						...milestone,
-						tasks: newTasks
-					};
-				})
-			};
-		});
-
-		// Update both the markdown and parsed projects
-		markdown = markdownFromProjects(newProjects);
+		updateCurrentMilestoneTasks((tasks) =>
+			[...tasks].toSpliced(fromIndex, 1).toSpliced(toIndex, 0, tasks[fromIndex])
+		);
 	}
 
-	function getCurrentProjectMarkdown() {
-		const project = parsedProjects[selectedProjectIndex];
-		if (!project) return '';
-
-		return markdownFromProjects([project]);
-	}
-
-	// Helper to replace current project in the full markdown
 	function replaceCurrentProject(newProjectMarkdown) {
-		const newProject = parseMarkdown(newProjectMarkdown)[0];
+		const [newProject] = parseMarkdown(newProjectMarkdown);
 		if (!newProject) return;
 
-		const updatedProjects = parsedProjects.map((p, i) =>
-			i === selectedProjectIndex ? newProject : p
-		);
-
-		markdown = markdownFromProjects(updatedProjects);
+		const newProjects = projects.map((p, i) => (i === currentProjectIndex ? newProject : p));
+		updateProjects(newProjects);
 	}
 </script>
 
 <div class="app-container">
 	<aside class="sidebar">
 		<ProjectSelector
-			{parsedProjects}
+			parsedProjects={projects}
 			selectedProjectIndex={currentProjectIndex}
-			onselectProject={selectProject}
+			onselectProject={(i) => {
+				selectedProjectIndex = i;
+				selectedMilestoneIndex = 0;
+			}}
 		/>
 		<MilestoneList
-			{parsedProjects}
+			parsedProjects={projects}
 			selectedProjectIndex={currentProjectIndex}
-			onselectMilestone={selectMilestone}
+			onselectMilestone={(i) => (selectedMilestoneIndex = i)}
 		/>
 	</aside>
 
 	<main class="main-content">
 		<TaskList
-			{parsedProjects}
+			parsedProjects={projects}
 			selectedProjectIndex={currentProjectIndex}
 			selectedMilestoneIndex={currentMilestoneIndex}
 			ontoggleTask={toggleTask}
@@ -132,9 +106,9 @@
 
 	<aside class="chat-sidebar">
 		<Chat
-			markdown={getCurrentProjectMarkdown()}
+			markdown={markdownFromProjects([currentProject])}
 			onreplaceMarkdown={replaceCurrentProject}
-			projectName={parsedProjects[currentProjectIndex]?.title ?? ''}
+			projectName={currentProject?.title ?? ''}
 		/>
 	</aside>
 </div>
