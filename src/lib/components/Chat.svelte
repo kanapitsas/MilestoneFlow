@@ -1,10 +1,14 @@
 <script>
 	let { markdown, onreplaceMarkdown, projectName } = $props();
 	let userInput = $state('');
-	let messages = $state([]);
+	let projectChats = $state({});
 	let isLoading = $state(false);
 	let currentResponse = $state('');
 
+	// Get or initialize messages for current project
+	let messages = $derived(projectChats[projectName] || []);
+
+	// Helper function to validate markdown structure
 	function isValidMarkdownStructure(text) {
 		if (!text.trim().startsWith('# ')) return false;
 
@@ -23,12 +27,21 @@
 		return hasProject && hasMilestone;
 	}
 
+	// Update project chat history
+	function updateProjectChat(newMessages) {
+		projectChats = {
+			...projectChats,
+			[projectName]: newMessages
+		};
+	}
+
 	async function sendMessage() {
 		if (!userInput.trim() || isLoading) return;
 
 		const userMessage = userInput;
 		userInput = '';
-		messages = [...messages, { role: 'user', content: userMessage }];
+		const newMessages = [...messages, { role: 'user', content: userMessage }];
+		updateProjectChat(newMessages);
 		currentResponse = '';
 		isLoading = true;
 
@@ -37,7 +50,7 @@
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					messages,
+					messages: newMessages,
 					markdown,
 					projectName
 				})
@@ -57,46 +70,68 @@
 
 			// When streaming is complete, check if the response is a valid markdown update
 			if (isValidMarkdownStructure(currentResponse)) {
-				// Add confirmation message to chat
-				messages = [
-					...messages,
+				const updatedMessages = [
+					...newMessages,
 					{
 						role: 'assistant',
 						content: "I've updated the project structure as requested."
 					}
 				];
-				// Update the markdown
+				updateProjectChat(updatedMessages);
 				onreplaceMarkdown(currentResponse);
 			} else {
-				// Regular chat message
-				messages = [
-					...messages,
+				const updatedMessages = [
+					...newMessages,
 					{
 						role: 'assistant',
 						content: currentResponse
 					}
 				];
+				updateProjectChat(updatedMessages);
 			}
 		} catch (error) {
 			console.error('Error:', error);
-			messages = [
-				...messages,
+			const updatedMessages = [
+				...newMessages,
 				{
 					role: 'assistant',
 					content: 'Sorry, there was an error processing your request.'
 				}
 			];
+			updateProjectChat(updatedMessages);
 		} finally {
 			isLoading = false;
 			currentResponse = '';
 		}
 	}
+
+	// Optional: Add a welcome message when starting a new chat
+	$effect(() => {
+		if (!projectChats[projectName]) {
+			updateProjectChat([
+				{
+					role: 'assistant',
+					content: `Hi! I'm here to help you manage "${projectName}". What would you like to do?`
+				}
+			]);
+		}
+	});
 </script>
 
 <div class="chat-container">
 	<div class="chat-header">
 		<h2>Chat about "{projectName}"</h2>
+		{#if messages.length > 1}
+			<button
+				class="clear-chat"
+				onclick={() => updateProjectChat([])}
+				aria-label="Clear chat history"
+			>
+				Clear Chat
+			</button>
+		{/if}
 	</div>
+
 	<div class="messages">
 		{#each messages as m}
 			<div class="message {m.role}">
@@ -129,7 +164,7 @@
 		<input
 			type="text"
 			bind:value={userInput}
-			placeholder="Ask the AI..."
+			placeholder="Ask about this project..."
 			disabled={isLoading}
 			onkeyup={(e) => e.key === 'Enter' && sendMessage()}
 		/>
@@ -290,5 +325,28 @@
 		font-weight: 500;
 		color: var(--text-secondary);
 		margin: 0;
+	}
+	.chat-header {
+		padding: var(--space-md);
+		border-bottom: 1px solid var(--border);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.clear-chat {
+		font-size: 0.8125rem;
+		padding: var(--space-xs) var(--space-sm);
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: var(--transition);
+	}
+
+	.clear-chat:hover {
+		background: var(--surface-hover);
+		color: var(--text);
 	}
 </style>
