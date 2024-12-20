@@ -7,27 +7,25 @@
 	import TaskList from '$lib/components/TaskList.svelte';
 	import Chat from '$lib/components/Chat.svelte';
 
-	// Get data from SvelteKit's load function
+	// Get data from server-side load function
 	let { data } = $props();
 
 	// Initialize state with data from server
 	let markdown = $state(data.raw);
-	let parsedProjects = $state(data.projects);
+	let parsedProjects = $derived(parseMarkdown(markdown));
 	let selectedProjectIndex = $state(0);
 	let selectedMilestoneIndex = $state(0);
 
-	// Only update parsedProjects when markdown changes
-	$effect(() => {
-		parsedProjects = parseMarkdown(markdown);
-	});
+	// Derive valid indices directly, removing the intermediate variables
+	let currentProjectIndex = $derived(
+		selectedProjectIndex >= parsedProjects.length ? 0 : selectedProjectIndex
+	);
 
-	// Separate effect for index validation
-	$effect(() => {
-		// Ensure indexes are in range
-		if (selectedProjectIndex >= parsedProjects.length) selectedProjectIndex = 0;
-		const proj = parsedProjects[selectedProjectIndex];
-		if (proj && selectedMilestoneIndex >= proj.milestones.length) selectedMilestoneIndex = 0;
-	});
+	let currentMilestoneIndex = $derived(
+		parsedProjects[currentProjectIndex]?.milestones.length <= selectedMilestoneIndex
+			? 0
+			: selectedMilestoneIndex
+	);
 
 	function selectProject(i) {
 		selectedProjectIndex = i;
@@ -61,7 +59,6 @@
 
 		// Update both the markdown and parsed projects
 		markdown = markdownFromProjects(newProjects);
-		parsedProjects = newProjects;
 	}
 
 	function reorderTasks(fromIndex, toIndex) {
@@ -87,11 +84,8 @@
 
 		// Update both the markdown and parsed projects
 		markdown = markdownFromProjects(newProjects);
-		parsedProjects = newProjects;
 	}
-	function replaceMarkdown(newMarkdown) {
-		markdown = newMarkdown;
-	}
+
 	function getCurrentProjectMarkdown() {
 		const project = parsedProjects[selectedProjectIndex];
 		if (!project) return '';
@@ -114,15 +108,23 @@
 
 <div class="app-container">
 	<aside class="sidebar">
-		<ProjectSelector {parsedProjects} {selectedProjectIndex} onselectProject={selectProject} />
-		<MilestoneList {parsedProjects} {selectedProjectIndex} onselectMilestone={selectMilestone} />
+		<ProjectSelector
+			{parsedProjects}
+			selectedProjectIndex={currentProjectIndex}
+			onselectProject={selectProject}
+		/>
+		<MilestoneList
+			{parsedProjects}
+			selectedProjectIndex={currentProjectIndex}
+			onselectMilestone={selectMilestone}
+		/>
 	</aside>
 
 	<main class="main-content">
 		<TaskList
 			{parsedProjects}
-			{selectedProjectIndex}
-			{selectedMilestoneIndex}
+			selectedProjectIndex={currentProjectIndex}
+			selectedMilestoneIndex={currentMilestoneIndex}
 			ontoggleTask={toggleTask}
 			onreorderTasks={reorderTasks}
 		/>
@@ -132,7 +134,7 @@
 		<Chat
 			markdown={getCurrentProjectMarkdown()}
 			onreplaceMarkdown={replaceCurrentProject}
-			projectName={parsedProjects[selectedProjectIndex]?.title ?? ''}
+			projectName={parsedProjects[currentProjectIndex]?.title ?? ''}
 		/>
 	</aside>
 </div>
