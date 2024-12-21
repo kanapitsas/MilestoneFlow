@@ -8,29 +8,24 @@
 - [x] Improve chat interface with more space
 - [ ] Enhance navbar design
 - [ ] Update logo design
+- [ ] Add overflow milestone/task functionality
 
 ## Milestone 3: User Management and API Key Integration
-- [ ] Develop user management with private API key generation
+- [ ] Develop user management with API key (UUID) generation
 - [ ] Enable user-provided API key functionality
-- [ ] Store conversations in a store
-- [ ] Assign UUID to each user
-- [ ] Test AI output consistency across different use cases
-- [ ] Develop local download option for Markdown files
-- [ ] Set up automatic saving to server under user directory
-- [ ] Implement project creation and modification features
-- [ ] Validate the functionality of saving and exporting
-- [ ] Validate performance on Vercel
 - [ ] Plan for user authentication systems
-- [ ] Design reports and visualizations
-- [ ] Explore cost optimization strategies for API usage
-- [ ] Deploy frontend on Vercel
 
 ## Milestone 4: AI Integration
 - [ ] Test AI output consistency across different use cases
+- [ ] Handle chatty preamble when updating
 
 ## Milestone 5: Save and Export Functionality
 - [ ] Develop local download option for Markdown files
-- [ ] Set up automatic saving to server under user directory
+- [ ] Use Supabase to save chats and projects by UUID
+- [ ] Set up Supabase project and configure authentication
+- [ ] Integrate Supabase database for data storage
+- [ ] Implement data synchronization with Supabase
+- [ ] Test data retrieval and saving with Supabase
 
 ## Milestone 6: MVP Features
 - [ ] Implement project creation and modification features
@@ -38,9 +33,9 @@
 
 ## Milestone 7: Testing and Validation
 - [ ] Validate performance on Vercel
+- [ ] Test by other users
 
 ## Future Development
-- [ ] Plan for user authentication systems
 - [ ] Design reports and visualizations
 - [ ] Explore cost optimization strategies for API usage
 - [ ] Deploy frontend on Vercel
