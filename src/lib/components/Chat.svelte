@@ -1,74 +1,65 @@
 <script>
-	import ColumnHeader from './ColumnHeader.svelte';
+	/**
+	 * Props:
+	 * - markdown: current project's markdown
+	 * - onreplaceMarkdown(markdown: string): user wants to replace a full project
+	 * - onupdateMilestoneByName(milestoneMarkdown: string): update one or more milestones
+	 * - projectName: the name of the current project for scoping the chat
+	 */
+	let { markdown, onreplaceMarkdown, onupdateMilestoneByName, projectName } = $props();
 
-	let { markdown, onreplaceMarkdown, projectName } = $props();
 	let userInput = $state('');
 	let projectChats = $state({});
 	let isLoading = $state(false);
 	let currentResponse = $state('');
 
-	// Get or initialize messages for current project
+	// Derive the messages for this projectName
 	let messages = $derived(projectChats[projectName] || []);
 
-	// Reference to the messages container
+	// Auto-scroll refs and state
 	let messagesContainer;
+	let isAutoScrolling = $state(false);
+	let lastScrollTop = $state(0);
 
-	// Auto-scroll effect
+	// Auto-scroll when messages change or during streaming
 	$effect(() => {
-		// Reference messages and currentResponse inside the effect
-		// so they're tracked as dependencies
-		if (messagesContainer && (messages.length || currentResponse)) {
+		if (!messagesContainer) return;
+
+		// Only auto-scroll if we're already at the bottom or streaming
+		const isAtBottom =
+			Math.abs(
+				messagesContainer.scrollHeight -
+					messagesContainer.clientHeight -
+					messagesContainer.scrollTop
+			) < 50;
+
+		if (isAutoScrolling || isAtBottom || currentResponse) {
 			messagesContainer.scrollTop = messagesContainer.scrollHeight;
 		}
 	});
 
-	// Helper function to validate markdown structure
-	function isValidMarkdownStructure(text) {
-		if (!text.includes('# ')) return false;
-
-		const lines = text.trim().split('\n');
-		let hasProject = false;
-		let hasMilestone = false;
-
-		for (const line of lines) {
-			if (line.startsWith('# ')) hasProject = true;
-			if (line.startsWith('## ')) hasMilestone = true;
-			if (line.startsWith('- [')) {
-				if (!line.match(/- \[[ x]\]/)) return false;
-			}
+	function handleScroll(e) {
+		const { scrollTop } = e.target;
+		// Update auto-scroll based on user scrolling up/down
+		if (Math.abs(scrollTop - lastScrollTop) > 50) {
+			isAutoScrolling = scrollTop > lastScrollTop;
+			lastScrollTop = scrollTop;
 		}
-
-		return hasProject && hasMilestone;
 	}
 
-	// Helper function to extract markdown structure
-	function extractMarkdownStructure(text) {
-		const lines = text.split('\n');
-		let markdownStartIndex = -1;
-
-		// Find where the markdown structure starts
-		for (let i = 0; i < lines.length; i++) {
-			if (lines[i].startsWith('# ')) {
-				const remainingText = lines.slice(i).join('\n');
-				if (isValidMarkdownStructure(remainingText)) {
-					markdownStartIndex = i;
-					break;
-				}
-			}
+	/**
+	 * Detect whether the final text from the LLM is a full project or milestones.
+	 */
+	function parseChatResponse(fullText) {
+		const text = fullText.trim();
+		if (text.startsWith('# ')) {
+			return { type: 'project', markdown: text };
+		} else if (text.startsWith('## ')) {
+			return { type: 'milestones', markdown: text };
 		}
-
-		if (markdownStartIndex === -1) return null;
-
-		const conversationalPart = lines.slice(0, markdownStartIndex).join('\n').trim();
-		const markdownPart = lines.slice(markdownStartIndex).join('\n').trim();
-
-		return {
-			markdown: markdownPart,
-			message: conversationalPart || "I've updated the project structure as requested."
-		};
+		return null;
 	}
 
-	// Update project chat history
 	function updateProjectChat(newMessages) {
 		projectChats = {
 			...projectChats,
@@ -79,13 +70,15 @@
 	async function sendMessage() {
 		if (!userInput.trim() || isLoading) return;
 
-		const userMessage = userInput;
+		const userMsg = userInput;
 		userInput = '';
-		const newMessages = [...messages, { role: 'user', content: userMessage }];
+		const newMessages = [...messages, { role: 'user', content: userMsg }];
 		updateProjectChat(newMessages);
-		currentResponse = '';
 		isLoading = true;
+		currentResponse = '';
+		isAutoScrolling = true; // Enable auto-scroll when sending message
 
+		let accumulated = '';
 		try {
 			const res = await fetch('/api/chat', {
 				method: 'POST',
@@ -96,8 +89,7 @@
 					projectName
 				})
 			});
-
-			if (!res.ok) throw new Error('Failed to fetch response');
+			if (!res.ok) throw new Error('Chat request failed');
 
 			const reader = res.body.getReader();
 			const decoder = new TextDecoder();
@@ -105,65 +97,52 @@
 			while (true) {
 				const { value, done } = await reader.read();
 				if (done) break;
-				const text = decoder.decode(value);
-				currentResponse += text;
+				accumulated += decoder.decode(value);
+				currentResponse = accumulated;
 			}
 
-			// When streaming is complete
-			const extracted = extractMarkdownStructure(currentResponse);
-			if (extracted) {
-				const updatedMessages = [...newMessages, { role: 'assistant', content: extracted.message }];
-				updateProjectChat(updatedMessages);
-				onreplaceMarkdown(extracted.markdown);
+			const parsed = parseChatResponse(accumulated);
+			if (parsed?.type === 'project') {
+				const updated = [...newMessages, { role: 'assistant', content: 'Updated entire project.' }];
+				updateProjectChat(updated);
+				onreplaceMarkdown(parsed.markdown);
+			} else if (parsed?.type === 'milestones') {
+				const updated = [...newMessages, { role: 'assistant', content: 'Updated milestones.' }];
+				updateProjectChat(updated);
+				onupdateMilestoneByName(parsed.markdown);
 			} else {
-				const updatedMessages = [...newMessages, { role: 'assistant', content: currentResponse }];
-				updateProjectChat(updatedMessages);
+				const updated = [...newMessages, { role: 'assistant', content: accumulated }];
+				updateProjectChat(updated);
 			}
-		} catch (error) {
-			console.error('Error:', error);
-			const updatedMessages = [
+		} catch (err) {
+			console.error(err);
+			updateProjectChat([
 				...newMessages,
-				{
-					role: 'assistant',
-					content: 'Sorry, there was an error processing your request.'
-				}
-			];
-			updateProjectChat(updatedMessages);
+				{ role: 'assistant', content: 'Error processing your request.' }
+			]);
 		} finally {
 			isLoading = false;
 			currentResponse = '';
+			// Keep auto-scroll enabled for a short while after completion
+			setTimeout(() => {
+				isAutoScrolling = false;
+			}, 1000);
 		}
 	}
 </script>
 
 <div class="chat-container">
-	<ColumnHeader title={`Chat about "${projectName}"`}>
-		{#if messages.length > 1}
-			<button
-				class="clear-chat"
-				onclick={() => updateProjectChat([])}
-				aria-label="Clear chat history"
-			>
-				Clear Chat
-			</button>
-		{/if}
-	</ColumnHeader>
-
-	<div class="messages" bind:this={messagesContainer}>
+	<div class="messages" bind:this={messagesContainer} onscroll={handleScroll}>
 		{#each messages as m}
 			<div class="message {m.role}">
 				<div class="message-role">{m.role}</div>
-				<div class="message-content">
-					{m.content}
-				</div>
+				<div class="message-content">{m.content}</div>
 			</div>
 		{/each}
 
 		{#if currentResponse}
 			<div class="message assistant">
-				<div class="message-content">
-					{currentResponse}
-				</div>
+				<div class="message-content">{currentResponse}</div>
 			</div>
 		{/if}
 
@@ -180,9 +159,7 @@
 
 	<div class="input-area">
 		<textarea
-			rows="1"
 			bind:value={userInput}
-			placeholder="Ask about this project..."
 			disabled={isLoading}
 			onkeydown={(e) => {
 				if (e.key === 'Enter' && !e.shiftKey) {
@@ -191,22 +168,7 @@
 				}
 			}}
 		></textarea>
-		<button onclick={sendMessage} disabled={isLoading} aria-label="Send message">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="20"
-				height="20"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<line x1="22" y1="2" x2="11" y2="13"></line>
-				<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-			</svg>
-		</button>
+		<button onclick={sendMessage} disabled={isLoading}>Send</button>
 	</div>
 </div>
 
@@ -241,6 +203,15 @@
 		white-space: pre-wrap; /* Preserve line breaks */
 		max-width: 100%; /* Ensure content doesn't overflow */
 		padding-right: var(--space-sm); /* Add some right padding */
+	}
+
+	.message-content.loading {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: center;
+		align-items: center;
+		padding: 1rem;
+		color: var(--text-secondary);
 	}
 
 	.message.user {
