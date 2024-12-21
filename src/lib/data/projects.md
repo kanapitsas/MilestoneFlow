@@ -1,23 +1,18 @@
 # Project A
 
 ## Milestone 1: Project Setup
-- [ ] Create FastAPI endpoints for milestone generation
-- [ ] Deploy backend on Render
-- [ ] Set up frontend with SvelteKit
-- [ ] Deploy frontend on Vercel
+- [x] Create FastAPI endpoints for milestone generation
+- [x] Set up frontend with SvelteKit
 
 ## Milestone 2: User Interface Development
-- [x] Prototype the three-column layout
-- [x] Implement drag-and-drop for task management
-- [x] Develop the chat interface for AI interaction
+- [x] Improve chat interface with more space
+- [ ] Enhance navbar design
+- [ ] Update logo design
 
 ## Milestone 3: AI Integration
-- [x] Integrate GPT-4o via OpenAI API
 - [ ] Enable user-provided API key functionality
-- [ ] Test AI responses for milestone and task generation
 
 ## Milestone 4: Save and Export Functionality
-- [ ] Implement saving projects in Markdown format
 - [ ] Develop local download option for Markdown files
 - [ ] Set up automatic saving to server under user directory
 
@@ -27,14 +22,14 @@
 - [ ] Validate the functionality of saving and exporting
 
 ## Milestone 6: Testing and Validation
-- [ ] Test AI output consistency
-- [ ] Validate performance on Vercel and Render
-- [ ] Gather feedback for improvements
+- [ ] Test AI output consistency across different use cases
+- [ ] Validate performance on Vercel
 
 ## Future Development
 - [ ] Plan for user authentication systems
 - [ ] Design reports and visualizations
 - [ ] Explore cost optimization strategies for API usage
+- [ ] Deploy frontend on Vercel
 
 # Project B
 

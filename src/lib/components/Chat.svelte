@@ -178,13 +178,18 @@
 	</div>
 
 	<div class="input-area">
-		<input
-			type="text"
+		<textarea
+			rows="1"
 			bind:value={userInput}
 			placeholder="Ask about this project..."
 			disabled={isLoading}
-			onkeyup={(e) => e.key === 'Enter' && sendMessage()}
-		/>
+			onkeydown={(e) => {
+				if (e.key === 'Enter' && !e.shiftKey) {
+					e.preventDefault();
+					sendMessage();
+				}
+			}}
+		></textarea>
 		<button onclick={sendMessage} disabled={isLoading} aria-label="Send message">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -226,11 +231,15 @@
 		width: 100%;
 		padding: var(--space-md);
 		border-bottom: 1px solid var(--border);
+		box-sizing: border-box; /* Ensure padding is included in width */
 	}
 
 	.message-content {
-		word-break: break-word; /* Prevent text from causing horizontal scroll */
+		word-break: break-word;
 		overflow-wrap: break-word;
+		white-space: pre-wrap; /* Preserve line breaks */
+		max-width: 100%; /* Ensure content doesn't overflow */
+		padding-right: var(--space-sm); /* Add some right padding */
 	}
 
 	.message.user {
@@ -257,21 +266,31 @@
 		padding: var(--space-md);
 		display: flex;
 		gap: var(--space-sm);
+		box-sizing: border-box;
 	}
 
-	input {
+	textarea {
 		flex: 1;
 		padding: var(--space-sm) var(--space-md);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-md);
 		font-size: 0.9375rem;
 		transition: var(--transition);
+		resize: none;
+		height: 50px; /* Fixed height */
+		overflow-y: auto;
+		line-height: 1.4;
+		font-family: inherit;
 	}
-
-	input:focus {
+	textarea:focus {
 		outline: none;
 		border-color: var(--primary);
 		box-shadow: 0 0 0 2px var(--primary-dark);
+	}
+
+	textarea:disabled {
+		background: var(--surface);
+		cursor: not-allowed;
 	}
 
 	button {
@@ -337,11 +356,6 @@
 
 	button:disabled {
 		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	input:disabled {
-		background: var(--surface);
 		cursor: not-allowed;
 	}
 

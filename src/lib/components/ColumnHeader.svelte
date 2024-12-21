@@ -1,9 +1,10 @@
 <script>
-	let { title } = $props();
+	let { title, children } = $props();
 </script>
 
 <div class="column-header">
 	<h2>{title}</h2>
+	{@render children?.()}
 </div>
 
 <style>
