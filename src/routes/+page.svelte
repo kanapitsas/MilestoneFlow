@@ -46,61 +46,79 @@
 		await updateProjects(newProjects);
 	}
 
-	async function updateMilestoneByName(milestoneMarkdown, milestoneName) {
-		const lines = milestoneMarkdown.trim().split('\n');
-		if (!lines[0]?.startsWith('## ')) return;
+	async function updateMilestoneByName(milestoneMarkdown) {
+		// If it's a full project update (starts with # Project)
+		if (milestoneMarkdown.trim().startsWith('# ')) {
+			return replaceCurrentProject(milestoneMarkdown);
+		}
 
-		console.log('Raw milestone markdown:', milestoneMarkdown); // Debug
+		// Split the markdown into milestone sections
+		const milestones = milestoneMarkdown
+			.split(/(?=^## )/m)
+			.map((section) => section.trim())
+			.filter(Boolean);
 
-		const tasks = lines
-			.slice(1)
-			.filter((line) => line.trim().startsWith('-'))
-			.map((line) => {
-				const trimmedLine = line.trim();
-				console.log('Processing line:', trimmedLine);
+		// Parse each milestone section
+		const parsedMilestones = milestones
+			.map((section) => {
+				const lines = section.split('\n');
+				const titleLine = lines[0];
+				if (!titleLine?.startsWith('## ')) return null;
 
-				const checkboxMatch = trimmedLine.match(/^-\s*\[([ x])\]\s*(.+)$/);
-				const plainListMatch = trimmedLine.match(/^-\s*(.+)$/);
+				const milestoneName = titleLine.replace('## ', '').trim();
+				const tasks = lines
+					.slice(1)
+					.filter((line) => line.trim().startsWith('-'))
+					.map((line) => {
+						const trimmedLine = line.trim();
+						const checkboxMatch = trimmedLine.match(/^-\s*\[([ x])\]\s*(.+)$/);
+						const plainListMatch = trimmedLine.match(/^-\s*(.+)$/);
 
-				if (checkboxMatch) {
-					return {
-						done: checkboxMatch[1] === 'x',
-						name: checkboxMatch[2].trim() // Changed from 'text' to 'name'
-					};
-				} else if (plainListMatch) {
-					return {
-						done: false,
-						name: plainListMatch[1].trim() // Changed from 'text' to 'name'
-					};
-				}
+						if (checkboxMatch) {
+							return {
+								done: checkboxMatch[1] === 'x',
+								name: checkboxMatch[2].trim()
+							};
+						} else if (plainListMatch) {
+							return {
+								done: false,
+								name: plainListMatch[1].trim()
+							};
+						}
+						return null;
+					})
+					.filter(Boolean);
 
-				console.log('Failed to parse line:', trimmedLine);
-				return null;
+				return { title: milestoneName, tasks };
 			})
 			.filter(Boolean);
 
-		console.log('Parsed tasks:', tasks); // Debug
-
-		const newMilestone = { title: milestoneName, tasks };
-
-		let found = false;
+		// Update the project with the new milestone data
 		const newProjects = projects.map((p) => {
-			const idx = p.milestones?.findIndex((m) => m.title === milestoneName);
-			if (idx !== undefined && idx >= 0) {
-				found = true;
-				return {
-					...p,
-					milestones: p.milestones.map((m, j) => (j === idx ? newMilestone : m))
-				};
-			}
-			return p;
+			if (p.title !== currentProject?.title) return p;
+
+			const updatedMilestones = [...p.milestones];
+
+			// Update each parsed milestone
+			parsedMilestones.forEach((newMilestone) => {
+				const existingIndex = updatedMilestones.findIndex((m) => m.title === newMilestone.title);
+
+				if (existingIndex >= 0) {
+					// Update existing milestone
+					updatedMilestones[existingIndex] = newMilestone;
+				} else {
+					// Add new milestone
+					updatedMilestones.push(newMilestone);
+				}
+			});
+
+			return {
+				...p,
+				milestones: updatedMilestones
+			};
 		});
 
-		if (found) {
-			await updateProjects(newProjects);
-		} else {
-			console.log(`Milestone "${milestoneName}" not found`);
-		}
+		await updateProjects(newProjects);
 	}
 
 	// Helper function for toggling and reordering

@@ -49,8 +49,16 @@
 
 ## Setup
 - [ ] Emma stone
+- [ ] Test
 
 ## Next
 - [ ] Make it beautiful
 - [ ] Emma Watson
 - [ ] Scarlett Johansson
+
+## Harry Potter Checklist
+- [ ] Watch all the movies
+- [ ] Read all the books
+- [ ] Visit the Wizarding World theme park
+- [ ] Buy a wand from Ollivanders
+- [ ] Test
