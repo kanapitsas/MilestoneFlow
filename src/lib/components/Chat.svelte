@@ -1,5 +1,6 @@
 <script>
 	import ColumnHeader from './ColumnHeader.svelte';
+
 	let { markdown, onreplaceMarkdown, projectName } = $props();
 	let userInput = $state('');
 	let projectChats = $state({});
@@ -8,6 +9,18 @@
 
 	// Get or initialize messages for current project
 	let messages = $derived(projectChats[projectName] || []);
+
+	// Reference to the messages container
+	let messagesContainer;
+
+	// Auto-scroll effect
+	$effect(() => {
+		// Reference messages and currentResponse inside the effect
+		// so they're tracked as dependencies
+		if (messagesContainer && (messages.length || currentResponse)) {
+			messagesContainer.scrollTop = messagesContainer.scrollHeight;
+		}
+	});
 
 	// Helper function to validate markdown structure
 	function isValidMarkdownStructure(text) {
@@ -121,18 +134,6 @@
 			currentResponse = '';
 		}
 	}
-
-	// Optional: Add a welcome message when starting a new chat
-	$effect(() => {
-		if (!projectChats[projectName]) {
-			updateProjectChat([
-				{
-					role: 'assistant',
-					content: `Hi! I'm here to help you manage "${projectName}". What would you like to do?`
-				}
-			]);
-		}
-	});
 </script>
 
 <div class="chat-container">
@@ -148,7 +149,7 @@
 		{/if}
 	</ColumnHeader>
 
-	<div class="messages">
+	<div class="messages" bind:this={messagesContainer}>
 		{#each messages as m}
 			<div class="message {m.role}">
 				<div class="message-role">{m.role}</div>
@@ -282,6 +283,7 @@
 		line-height: 1.4;
 		font-family: inherit;
 	}
+
 	textarea:focus {
 		outline: none;
 		border-color: var(--primary);
@@ -320,6 +322,7 @@
 			transform: translateY(0);
 		}
 	}
+
 	.loading {
 		display: flex;
 		gap: 0.5rem;
@@ -339,6 +342,7 @@
 	.dot:nth-child(1) {
 		animation-delay: -0.32s;
 	}
+
 	.dot:nth-child(2) {
 		animation-delay: -0.16s;
 	}

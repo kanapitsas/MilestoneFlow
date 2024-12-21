@@ -1,40 +1,47 @@
 # Project A
 
+## Milestone 1: Project Setup
+- [x] Create FastAPI endpoints for milestone generation
+- [x] Set up frontend with SvelteKit
+- [ ] Emma Stone
+
 ## Milestone 2: User Interface Development
+- [x] Improve chat interface with more space
 - [ ] Enhance navbar design
 - [ ] Update logo design
-- [ ] Add chat auto-scroll
 
-## Milestone 3: AI Integration
+## Milestone 3: User Management and API Key Integration
+- [ ] Develop user management with private API key generation
 - [ ] Enable user-provided API key functionality
+- [ ] Store conversations in a store
+- [ ] Assign UUID to each user
+- [ ] Jennifer Lawrence
+- [ ] hey
+
+## Milestone 4: AI Integration
 - [ ] Test AI output consistency across different use cases
-- [ ] Validate AI model performance
-- [ ] Optimize AI response time
-- [ ] Conduct unit tests for AI components
-- [ ] Perform stress testing on AI features
-- [ ] Analyze AI decision-making process for transparency
-- [ ] Break down AI testing into detailed steps:
-- [ ] Implement partial project update for milestones to enhance responsiveness
+- [ ] Natalie Portman
 
-## Milestone 4: Save and Export Functionality
+## Milestone 5: Save and Export Functionality
 - [ ] Develop local download option for Markdown files
-- [ ] Set up saving project data to Firebase
-- [ ] Save chat data to Firebase
+- [ ] Set up automatic saving to server under user directory
+- [ ] Margot Robbie
 
-## Milestone 5: MVP Features
+## Milestone 6: MVP Features
 - [ ] Implement project creation and modification features
-- [ ] Develop user management with UUID generation
 - [ ] Validate the functionality of saving and exporting
+- [ ] Gal Gadot
 
-## Milestone 6: Testing and Validation
+## Milestone 7: Testing and Validation
 - [ ] Validate performance on Vercel
+- [ ] Keira Knightley
 
 ## Future Development
 - [ ] Plan for user authentication systems
 - [ ] Design reports and visualizations
 - [ ] Explore cost optimization strategies for API usage
 - [ ] Deploy frontend on Vercel
-- [ ] Implement user data management using Firebase
+- [ ] Emma Watson
 
 # Project B
 
