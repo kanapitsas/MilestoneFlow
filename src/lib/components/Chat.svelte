@@ -1,74 +1,48 @@
 <script>
-	import ColumnHeader from './ColumnHeader.svelte';
+	/**
+	 * Props:
+	 * - markdown: current project’s markdown
+	 * - onreplaceMarkdown(markdown: string): user wants to replace a full project
+	 * - onupdateMilestoneByName(milestoneMarkdown: string, milestoneName: string): update a milestone by title
+	 * - projectName: the name of the current project for scoping the chat
+	 */
+	let { markdown, onreplaceMarkdown, onupdateMilestoneByName, projectName } = $props();
 
-	let { markdown, onreplaceMarkdown, projectName } = $props();
 	let userInput = $state('');
 	let projectChats = $state({});
 	let isLoading = $state(false);
 	let currentResponse = $state('');
 
-	// Get or initialize messages for current project
+	// Derive the messages for this projectName
 	let messages = $derived(projectChats[projectName] || []);
 
-	// Reference to the messages container
+	// Auto-scroll ref
 	let messagesContainer;
-
-	// Auto-scroll effect
 	$effect(() => {
-		// Reference messages and currentResponse inside the effect
-		// so they're tracked as dependencies
 		if (messagesContainer && (messages.length || currentResponse)) {
 			messagesContainer.scrollTop = messagesContainer.scrollHeight;
 		}
 	});
 
-	// Helper function to validate markdown structure
-	function isValidMarkdownStructure(text) {
-		if (!text.includes('# ')) return false;
-
-		const lines = text.trim().split('\n');
-		let hasProject = false;
-		let hasMilestone = false;
-
-		for (const line of lines) {
-			if (line.startsWith('# ')) hasProject = true;
-			if (line.startsWith('## ')) hasMilestone = true;
-			if (line.startsWith('- [')) {
-				if (!line.match(/- \[[ x]\]/)) return false;
-			}
-		}
-
-		return hasProject && hasMilestone;
-	}
-
-	// Helper function to extract markdown structure
-	function extractMarkdownStructure(text) {
+	/**
+	 * Detect whether the final text from the LLM is a full project or a single milestone.
+	 */
+	function parseChatResponse(fullText) {
+		const text = fullText.trim();
 		const lines = text.split('\n');
-		let markdownStartIndex = -1;
+		const hasProject = lines.some((line) => line.match(/^# /));
+		const hasMilestone = lines.some((line) => line.match(/^## /)) && !hasProject;
 
-		// Find where the markdown structure starts
-		for (let i = 0; i < lines.length; i++) {
-			if (lines[i].startsWith('# ')) {
-				const remainingText = lines.slice(i).join('\n');
-				if (isValidMarkdownStructure(remainingText)) {
-					markdownStartIndex = i;
-					break;
-				}
-			}
+		if (hasProject) {
+			return { type: 'project', markdown: text };
+		} else if (hasMilestone) {
+			const firstLine = text.split('\n')[0]?.trim();
+			const milestoneName = firstLine.slice(2).trim(); // remove "## "
+			return { type: 'milestone', markdown: text, milestoneName };
 		}
-
-		if (markdownStartIndex === -1) return null;
-
-		const conversationalPart = lines.slice(0, markdownStartIndex).join('\n').trim();
-		const markdownPart = lines.slice(markdownStartIndex).join('\n').trim();
-
-		return {
-			markdown: markdownPart,
-			message: conversationalPart || "I've updated the project structure as requested."
-		};
+		return null;
 	}
 
-	// Update project chat history
 	function updateProjectChat(newMessages) {
 		projectChats = {
 			...projectChats,
@@ -79,13 +53,14 @@
 	async function sendMessage() {
 		if (!userInput.trim() || isLoading) return;
 
-		const userMessage = userInput;
+		const userMsg = userInput;
 		userInput = '';
-		const newMessages = [...messages, { role: 'user', content: userMessage }];
+		const newMessages = [...messages, { role: 'user', content: userMsg }];
 		updateProjectChat(newMessages);
-		currentResponse = '';
 		isLoading = true;
+		currentResponse = '';
 
+		let accumulated = '';
 		try {
 			const res = await fetch('/api/chat', {
 				method: 'POST',
@@ -96,8 +71,7 @@
 					projectName
 				})
 			});
-
-			if (!res.ok) throw new Error('Failed to fetch response');
+			if (!res.ok) throw new Error('Chat request failed');
 
 			const reader = res.body.getReader();
 			const decoder = new TextDecoder();
@@ -105,30 +79,32 @@
 			while (true) {
 				const { value, done } = await reader.read();
 				if (done) break;
-				const text = decoder.decode(value);
-				currentResponse += text;
+				accumulated += decoder.decode(value);
+				currentResponse = accumulated;
 			}
 
-			// When streaming is complete
-			const extracted = extractMarkdownStructure(currentResponse);
-			if (extracted) {
-				const updatedMessages = [...newMessages, { role: 'assistant', content: extracted.message }];
-				updateProjectChat(updatedMessages);
-				onreplaceMarkdown(extracted.markdown);
+			const parsed = parseChatResponse(accumulated);
+			if (parsed?.type === 'project') {
+				const updated = [...newMessages, { role: 'assistant', content: 'Updated entire project.' }];
+				updateProjectChat(updated);
+				onreplaceMarkdown(parsed.markdown);
+			} else if (parsed?.type === 'milestone') {
+				const updated = [
+					...newMessages,
+					{ role: 'assistant', content: `Updated milestone: ${parsed.milestoneName}` }
+				];
+				updateProjectChat(updated);
+				onupdateMilestoneByName(parsed.markdown, parsed.milestoneName);
 			} else {
-				const updatedMessages = [...newMessages, { role: 'assistant', content: currentResponse }];
-				updateProjectChat(updatedMessages);
+				const updated = [...newMessages, { role: 'assistant', content: accumulated }];
+				updateProjectChat(updated);
 			}
-		} catch (error) {
-			console.error('Error:', error);
-			const updatedMessages = [
+		} catch (err) {
+			console.error(err);
+			updateProjectChat([
 				...newMessages,
-				{
-					role: 'assistant',
-					content: 'Sorry, there was an error processing your request.'
-				}
-			];
-			updateProjectChat(updatedMessages);
+				{ role: 'assistant', content: 'Error processing your request.' }
+			]);
 		} finally {
 			isLoading = false;
 			currentResponse = '';
@@ -137,33 +113,17 @@
 </script>
 
 <div class="chat-container">
-	<ColumnHeader title={`Chat about "${projectName}"`}>
-		{#if messages.length > 1}
-			<button
-				class="clear-chat"
-				onclick={() => updateProjectChat([])}
-				aria-label="Clear chat history"
-			>
-				Clear Chat
-			</button>
-		{/if}
-	</ColumnHeader>
-
 	<div class="messages" bind:this={messagesContainer}>
 		{#each messages as m}
 			<div class="message {m.role}">
 				<div class="message-role">{m.role}</div>
-				<div class="message-content">
-					{m.content}
-				</div>
+				<div class="message-content">{m.content}</div>
 			</div>
 		{/each}
 
 		{#if currentResponse}
 			<div class="message assistant">
-				<div class="message-content">
-					{currentResponse}
-				</div>
+				<div class="message-content">{currentResponse}</div>
 			</div>
 		{/if}
 
@@ -180,9 +140,7 @@
 
 	<div class="input-area">
 		<textarea
-			rows="1"
 			bind:value={userInput}
-			placeholder="Ask about this project..."
 			disabled={isLoading}
 			onkeydown={(e) => {
 				if (e.key === 'Enter' && !e.shiftKey) {
@@ -191,22 +149,7 @@
 				}
 			}}
 		></textarea>
-		<button onclick={sendMessage} disabled={isLoading} aria-label="Send message">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				width="20"
-				height="20"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<line x1="22" y1="2" x2="11" y2="13"></line>
-				<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-			</svg>
-		</button>
+		<button onclick={sendMessage} disabled={isLoading}>Send</button>
 	</div>
 </div>
 
@@ -241,6 +184,15 @@
 		white-space: pre-wrap; /* Preserve line breaks */
 		max-width: 100%; /* Ensure content doesn't overflow */
 		padding-right: var(--space-sm); /* Add some right padding */
+	}
+
+	.message-content.loading {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: center;
+		align-items: center;
+		padding: 1rem;
+		color: var(--text-secondary);
 	}
 
 	.message.user {

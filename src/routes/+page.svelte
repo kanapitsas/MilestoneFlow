@@ -1,47 +1,114 @@
 <script>
+	/**
+	 * Expects a `data` prop with { raw } containing your project markdown.
+	 * Uses parseMarkdown(), markdownFromProjects(), saveProjects() to handle state.
+	 */
 	import '../app.css';
 	import { parseMarkdown } from '$lib/utils/parseMarkdown.js';
 	import { markdownFromProjects } from '$lib/utils/markdownFromProjects.js';
 	import { saveProjects } from '$lib/utils/saveProjects.js';
+
+	import Navbar from '$lib/components/Navbar.svelte';
 	import MilestoneList from '$lib/components/MilestoneList.svelte';
 	import TaskList from '$lib/components/TaskList.svelte';
 	import Chat from '$lib/components/Chat.svelte';
-	import Navbar from '$lib/components/Navbar.svelte';
 
 	let { data } = $props();
 	let markdown = $state(data.raw);
+
 	let selectedProjectIndex = $state(0);
 	let selectedMilestoneIndex = $state(0);
 
-	// Core derived values
 	let projects = $derived(parseMarkdown(markdown));
 	let currentProjectIndex = $derived(
 		Math.min(selectedProjectIndex, projects.length - 1, Math.max(0, selectedProjectIndex))
 	);
-	let currentProject = $derived(projects[currentProjectIndex]);
+	let currentProject = $derived(projects[currentProjectIndex] || null);
+
 	let currentMilestoneIndex = $derived(
 		Math.min(
 			selectedMilestoneIndex,
-			(currentProject?.milestones.length ?? 1) - 1,
+			(currentProject?.milestones?.length ?? 1) - 1,
 			Math.max(0, selectedMilestoneIndex)
 		)
 	);
 
-	// Actions
 	async function updateProjects(newProjects) {
 		const newMarkdown = markdownFromProjects(newProjects);
 		markdown = newMarkdown;
 		await saveProjects(newMarkdown);
 	}
 
-	// Helper function to update tasks in current milestone
+	async function replaceCurrentProject(newProjectMarkdown) {
+		const [newProject] = parseMarkdown(newProjectMarkdown);
+		if (!newProject) return;
+		const newProjects = projects.map((p, i) => (i === currentProjectIndex ? newProject : p));
+		await updateProjects(newProjects);
+	}
+
+	async function updateMilestoneByName(milestoneMarkdown, milestoneName) {
+		const lines = milestoneMarkdown.trim().split('\n');
+		if (!lines[0]?.startsWith('## ')) return;
+
+		console.log('Raw milestone markdown:', milestoneMarkdown); // Debug
+
+		const tasks = lines
+			.slice(1)
+			.filter((line) => line.trim().startsWith('-'))
+			.map((line) => {
+				const trimmedLine = line.trim();
+				console.log('Processing line:', trimmedLine);
+
+				const checkboxMatch = trimmedLine.match(/^-\s*\[([ x])\]\s*(.+)$/);
+				const plainListMatch = trimmedLine.match(/^-\s*(.+)$/);
+
+				if (checkboxMatch) {
+					return {
+						done: checkboxMatch[1] === 'x',
+						name: checkboxMatch[2].trim() // Changed from 'text' to 'name'
+					};
+				} else if (plainListMatch) {
+					return {
+						done: false,
+						name: plainListMatch[1].trim() // Changed from 'text' to 'name'
+					};
+				}
+
+				console.log('Failed to parse line:', trimmedLine);
+				return null;
+			})
+			.filter(Boolean);
+
+		console.log('Parsed tasks:', tasks); // Debug
+
+		const newMilestone = { title: milestoneName, tasks };
+
+		let found = false;
+		const newProjects = projects.map((p) => {
+			const idx = p.milestones?.findIndex((m) => m.title === milestoneName);
+			if (idx !== undefined && idx >= 0) {
+				found = true;
+				return {
+					...p,
+					milestones: p.milestones.map((m, j) => (j === idx ? newMilestone : m))
+				};
+			}
+			return p;
+		});
+
+		if (found) {
+			await updateProjects(newProjects);
+		} else {
+			console.log(`Milestone "${milestoneName}" not found`);
+		}
+	}
+
+	// Helper function for toggling and reordering
 	function updateCurrentMilestoneTasks(taskUpdater) {
 		const project = projects[currentProjectIndex];
 		if (!project) return;
-
 		const milestone = project.milestones[currentMilestoneIndex];
 		if (!milestone) return;
-
 		const newTasks = taskUpdater(milestone.tasks);
 
 		const newProjects = projects.map((p, i) =>
@@ -50,18 +117,16 @@
 				: {
 						...p,
 						milestones: p.milestones.map((m, j) =>
-							j !== currentMilestoneIndex ? m : { ...m, tasks: newTasks }
+							j === currentMilestoneIndex ? { ...m, tasks: newTasks } : m
 						)
 					}
 		);
-
 		updateProjects(newProjects);
 	}
 
-	// Simplified task functions using the helper
 	function toggleTask(taskIndex) {
 		updateCurrentMilestoneTasks((tasks) =>
-			tasks.map((task, index) => (index !== taskIndex ? task : { ...task, done: !task.done }))
+			tasks.map((t, i) => (i === taskIndex ? { ...t, done: !t.done } : t))
 		);
 	}
 
@@ -69,16 +134,6 @@
 		updateCurrentMilestoneTasks((tasks) =>
 			[...tasks].toSpliced(fromIndex, 1).toSpliced(toIndex, 0, tasks[fromIndex])
 		);
-	}
-
-	async function replaceCurrentProject(newProjectMarkdown) {
-		const [newProject] = parseMarkdown(newProjectMarkdown);
-		if (!newProject) return;
-
-		const newProjects = projects.map((p, i) => (i === currentProjectIndex ? newProject : p));
-		const newMarkdown = markdownFromProjects(newProjects);
-		markdown = newMarkdown;
-		await saveProjects(newMarkdown);
 	}
 </script>
 
@@ -91,6 +146,7 @@
 			selectedMilestoneIndex = 0;
 		}}
 	/>
+
 	<div class="app-container">
 		<aside class="sidebar">
 			<MilestoneList
@@ -115,6 +171,7 @@
 			<Chat
 				markdown={markdownFromProjects([currentProject])}
 				onreplaceMarkdown={replaceCurrentProject}
+				onupdateMilestoneByName={updateMilestoneByName}
 				projectName={currentProject?.title ?? ''}
 			/>
 		</aside>

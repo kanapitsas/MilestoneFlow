@@ -18,6 +18,11 @@ When the user requests changes to the project structure (like adding, removing, 
 ## Another Milestone
 - [ ] Another task
 
+If only one milestone has to be changed, you can simply return the milestone part like so:
+
+## Another Milestone
+- [ ] Another task
+
 For all other queries (like questions about the project or general assistance), respond with normal conversational text. Keep these responses concise and friendly.
 
 Important:
