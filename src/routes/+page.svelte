@@ -96,6 +96,7 @@
 			<MilestoneList
 				parsedProjects={projects}
 				selectedProjectIndex={currentProjectIndex}
+				selectedMilestoneIndex={currentMilestoneIndex}
 				onselectMilestone={(i) => (selectedMilestoneIndex = i)}
 			/>
 		</aside>

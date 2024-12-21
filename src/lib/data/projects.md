@@ -1,44 +1,40 @@
 # Project A
 
-## Milestone 1: Set Up WordPress Environment
-- [ ] Choose a hosting provider
-- [x] Register a domain name
-- [ ] Install WordPress on the server
-- [x] Configure basic settings (site title, tagline, timezone)
+## Milestone 1: Project Setup
+- [ ] Create FastAPI endpoints for milestone generation
+- [ ] Deploy backend on Render
+- [ ] Set up frontend with SvelteKit
+- [ ] Deploy frontend on Vercel
 
-## Milestone 2: Select and Customize Theme
-- [ ] Research and select a WordPress theme
-- [x] Install the selected theme
-- [x] Customize the theme (colors, fonts, layout)
-- [ ] Create a child theme for future modifications
+## Milestone 2: User Interface Development
+- [x] Prototype the three-column layout
+- [x] Implement drag-and-drop for task management
+- [x] Develop the chat interface for AI interaction
 
-## Milestone 3: Create Essential Pages
-- [ ] Create Home page
-- [ ] Create About page
-- [ ] Create Contact page
-- [ ] Create Blog page
+## Milestone 3: AI Integration
+- [x] Integrate GPT-4o via OpenAI API
+- [ ] Enable user-provided API key functionality
+- [ ] Test AI responses for milestone and task generation
 
-## Milestone 4: Install and Configure Plugins
-- [ ] Install an SEO plugin
-- [ ] Install a caching plugin
-- [ ] Install a security plugin
-- [ ] Configure plugins settings
+## Milestone 4: Save and Export Functionality
+- [ ] Implement saving projects in Markdown format
+- [ ] Develop local download option for Markdown files
+- [ ] Set up automatic saving to server under user directory
 
-## Milestone 5: Populate Content
-- [ ] Write and publish first blog post
-- [ ] Add images to pages and posts
-- [ ] Create and add a menu
-- [ ] Set up social media integration
+## Milestone 5: MVP Features
+- [ ] Implement project creation and modification features
+- [ ] Develop user management with private API key generation
+- [ ] Validate the functionality of saving and exporting
 
-## Testing Milestone 1: Test Website Functionality
-- [x] Test site responsiveness on different devices
-- [x] Test form submissions on Contact page
+## Milestone 6: Testing and Validation
+- [ ] Test AI output consistency
+- [ ] Validate performance on Vercel and Render
+- [ ] Gather feedback for improvements
 
-## Testing Milestone 2: Perform User Acceptance Testing
-- [ ] Gather feedback from stakeholders
-- [ ] Make necessary adjustments based on feedback
-- [ ] Confirm all links are working
-- [ ] Test page loading speed
+## Future Development
+- [ ] Plan for user authentication systems
+- [ ] Design reports and visualizations
+- [ ] Explore cost optimization strategies for API usage
 
 # Project B
 
@@ -48,4 +44,4 @@
 
 ## Next
 - [ ] Make it beautiful
-- [ ] Code for real bro
+- [x] Code for real bro
