@@ -1,5 +1,5 @@
 <script>
-	import { fade, fly } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import Task from './Task.svelte';
 	import ColumnHeader from './ColumnHeader.svelte';
 	let {
@@ -47,8 +47,7 @@
 				ondragend={handleDragEnd}
 				ondragover={(e) => e.preventDefault()}
 				ondrop={(e) => handleDrop(e, i)}
-				in:fade={{ duration: 300 }}
-				out:fly={{ y: 20, duration: 300 }}
+				transition:fade={{ duration: 200 }}
 				role="listitem"
 				aria-label="Draggable task {i + 1}"
 			>

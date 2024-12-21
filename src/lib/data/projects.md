@@ -49,7 +49,6 @@
 
 ## Setup
 - [ ] Emma stone
-- [ ] Test
 
 ## Next
 - [ ] Make it beautiful
@@ -61,4 +60,3 @@
 - [ ] Read all the books
 - [ ] Visit the Wizarding World theme park
 - [ ] Buy a wand from Ollivanders
-- [ ] Test
