@@ -1,6 +1,7 @@
 import { OPENAI_API_KEY } from '$env/static/private';
 import OpenAI from 'openai';
 import { json } from '@sveltejs/kit';
+import { getServerSupabaseClient } from '$lib/server/supabase.js';
 
 const openai = new OpenAI({
 	apiKey: OPENAI_API_KEY
@@ -31,12 +32,23 @@ Important:
 - Keep milestone names consistent unless explicitly asked to rename them
 - For general questions or assistance, respond with normal conversational text`;
 
-export async function POST({ request }) {
+export async function POST({ request, locals }) {
 	try {
 		const { messages, markdown, projectName } = await request.json();
+		const user_id = locals.user_id;
+
+		// Save the user's message first
+		const supabase = getServerSupabaseClient();
+		const lastMessage = messages[messages.length - 1];
+		await supabase.from('chat_messages').insert({
+			user_id,
+			project_title: projectName,
+			role: lastMessage.role,
+			content: lastMessage.content
+		});
 
 		const completion = await openai.chat.completions.create({
-			model: 'gpt-4o',
+			model: 'gpt-4',
 			messages: [
 				{ role: 'system', content: SYSTEM_PROMPT },
 				{
@@ -52,11 +64,22 @@ export async function POST({ request }) {
 		// Create a new ReadableStream
 		const stream = new ReadableStream({
 			async start(controller) {
+				let accumulatedResponse = '';
 				try {
 					for await (const chunk of completion) {
 						const content = chunk.choices[0]?.delta?.content || '';
+						accumulatedResponse += content;
 						controller.enqueue(content);
 					}
+
+					// Save the assistant's complete response
+					await supabase.from('chat_messages').insert({
+						user_id,
+						project_title: projectName,
+						role: 'assistant',
+						content: accumulatedResponse
+					});
+
 					controller.close();
 				} catch (error) {
 					controller.error(error);
@@ -64,7 +87,6 @@ export async function POST({ request }) {
 			}
 		});
 
-		// Return the stream with the appropriate headers
 		return new Response(stream, {
 			headers: {
 				'Content-Type': 'text/event-stream',
@@ -75,5 +97,32 @@ export async function POST({ request }) {
 	} catch (error) {
 		console.error('Error:', error);
 		return json({ error: 'Failed to process request' }, { status: 500 });
+	}
+}
+
+// Add endpoint to load chat history
+export async function GET({ url, locals }) {
+	try {
+		const projectName = url.searchParams.get('project');
+		const user_id = locals.user_id;
+
+		if (!projectName || !user_id) {
+			return json({ error: 'Missing parameters' }, { status: 400 });
+		}
+
+		const supabase = getServerSupabaseClient();
+		const { data, error } = await supabase
+			.from('chat_messages')
+			.select('role, content, created_at')
+			.eq('user_id', user_id)
+			.eq('project_title', projectName)
+			.order('created_at', { ascending: true });
+
+		if (error) throw error;
+
+		return json({ messages: data });
+	} catch (error) {
+		console.error('Error loading chat history:', error);
+		return json({ error: 'Failed to load chat history' }, { status: 500 });
 	}
 }

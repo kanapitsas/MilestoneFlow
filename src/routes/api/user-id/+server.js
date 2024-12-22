@@ -14,6 +14,6 @@ export async function PATCH({ request, cookies }) {
 
 		return json({ success: true });
 	} catch (error) {
-		return json({ error: 'failed' }, { status: 400 });
+		return json({ error: error }, { status: 400 });
 	}
 }

@@ -6,6 +6,8 @@
 	 * - onupdateMilestoneByName(milestoneMarkdown: string): update one or more milestones
 	 * - projectName: the name of the current project for scoping the chat
 	 */
+	import ColumnHeader from './ColumnHeader.svelte';
+
 	let { markdown, onreplaceMarkdown, onupdateMilestoneByName, projectName } = $props();
 
 	let userInput = $state('');
@@ -15,6 +17,23 @@
 
 	// Derive the messages for this projectName
 	let messages = $derived(projectChats[projectName] || []);
+
+	$effect(async () => {
+		if (!projectName) return;
+
+		try {
+			const res = await fetch(`/api/chat?project=${encodeURIComponent(projectName)}`);
+			if (!res.ok) throw new Error('Failed to load chat history');
+
+			const { messages } = await res.json();
+			projectChats = {
+				...projectChats,
+				[projectName]: messages
+			};
+		} catch (error) {
+			console.error('Error loading chat history:', error);
+		}
+	});
 
 	// Auto-scroll refs and state
 	let messagesContainer;
@@ -129,9 +148,31 @@
 			}, 1000);
 		}
 	}
+
+	async function clearChat() {
+		try {
+			const res = await fetch(`/api/chat?project=${encodeURIComponent(projectName)}`, {
+				method: 'DELETE'
+			});
+
+			if (!res.ok) throw new Error('Failed to clear chat');
+
+			projectChats = {
+				...projectChats,
+				[projectName]: []
+			};
+		} catch (error) {
+			console.error('Error clearing chat:', error);
+		}
+	}
 </script>
 
 <div class="chat-container">
+	<ColumnHeader title="Chat">
+		{#if messages.length > 0}
+			<button class="clear-chat" onclick={clearChat}> Clear History </button>
+		{/if}
+	</ColumnHeader>
 	<div class="messages" bind:this={messagesContainer} onscroll={handleScroll}>
 		{#each messages as m}
 			<div class="message {m.role}">
