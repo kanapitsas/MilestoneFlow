@@ -6,8 +6,8 @@
 
 ## Milestone 2: User Interface Development
 - [x] Improve chat interface with more space
-- [ ] Enhance navbar design
-- [ ] Update logo design
+- [x] Enhance navbar design
+- [x] Update logo design
 - [ ] Add overflow milestone/task functionality
 
 ## Milestone 3: User Management and API Key Integration

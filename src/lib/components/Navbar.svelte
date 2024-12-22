@@ -8,8 +8,14 @@
 	<div class="nav-section">
 		<ProjectSelector {parsedProjects} {selectedProjectIndex} {onselectProject} />
 	</div>
-	<div class="nav-section">
-		<h1><span class="app-title">MilestoneFlow</span></h1>
+	<div class="nav-section brand">
+		<h1>
+			<span class="app-title">
+				<span class="title-part">Milestone</span>
+				<img src="/favicon.png" alt="MilestoneFlow Logo" class="logo" />
+				<span class="title-part">Flow</span>
+			</span>
+		</h1>
 	</div>
 	<div class="nav-section links">
 		<a
@@ -37,24 +43,60 @@
 </nav>
 
 <style>
+	h1 {
+		margin: 0;
+	}
+
 	.navbar {
 		display: grid;
 		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
-		padding: 0 var(--space-md); /* Reduced padding */
+		padding: 0 var(--space-md);
 		background: var(--navbar-bg);
 		border-bottom: 1px solid var(--border);
-		height: 70px; /* Optional: Set a fixed height */
+		height: 64px;
 		box-sizing: border-box;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.brand {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
 	}
 
 	.app-title {
-		font-size: 1rem;
+		font-size: 1.125rem;
 		font-weight: 600;
 		color: var(--primary);
-		background: color-mix(in srgb, var(--primary) 10%, transparent);
-		padding: 0.25rem 0.75rem;
+		background: color-mix(in srgb, var(--primary) 8%, transparent);
+		padding: 0.375rem 0.875rem;
 		border-radius: 999px;
+		letter-spacing: -0.01em;
+		transition: var(--transition);
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+	}
+
+	.app-title:hover {
+		background: color-mix(in srgb, var(--primary) 12%, transparent);
+	}
+
+	.title-part {
+		display: inline-block;
+	}
+
+	.logo {
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		object-fit: cover;
+		box-shadow:
+			0 0 0 2px var(--surface),
+			0 0 0 3px var(--accent-bg);
+		transition: var(--transition);
+		margin: 0 -2px; /* Slightly reduce the gap between text and logo */
 	}
 
 	.links {
@@ -68,14 +110,25 @@
 		transition: var(--transition);
 		display: flex;
 		align-items: center;
+		padding: var(--space-xs);
+		border-radius: var(--radius-sm);
 	}
 
 	.links a:hover {
 		color: var(--text);
+		background: var(--surface-hover);
 	}
 
 	.icon {
 		width: 20px;
 		height: 20px;
+	}
+
+	/* Optional: Add subtle hover effect to the logo */
+	.logo:hover {
+		transform: scale(1.05);
+		box-shadow:
+			0 0 0 2px var(--surface),
+			0 0 0 3px var(--primary);
 	}
 </style>
