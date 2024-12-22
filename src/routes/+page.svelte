@@ -14,7 +14,7 @@
 	import Chat from '$lib/components/Chat.svelte';
 
 	let { data } = $props();
-	let markdown = $state(data.markdown);
+	let markdown = $state(data.markdown || '');
 	let userId = data.user_id;
 
 	let selectedProjectIndex = $state(0);
@@ -35,9 +35,19 @@
 	);
 
 	async function updateProjects(newProjects) {
-		const newMarkdown = markdownFromProjects(newProjects);
-		markdown = newMarkdown;
-		await saveProjects(newMarkdown);
+		try {
+			const newMarkdown = markdownFromProjects(newProjects);
+			const saved = await saveProjects(newMarkdown);
+			if (saved) {
+				markdown = newMarkdown;
+			} else {
+				throw new Error('Failed to save projects');
+			}
+		} catch (error) {
+			console.error('Error updating projects:', error);
+			// Optionally show error to user
+			alert('Failed to save changes. Please try again.');
+		}
 	}
 
 	async function replaceCurrentProject(newProjectMarkdown) {
