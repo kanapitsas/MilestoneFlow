@@ -33,6 +33,7 @@ export async function load({ locals }) {
 	}
 
 	return {
-		markdown
+		markdown,
+		user_id
 	};
 }
