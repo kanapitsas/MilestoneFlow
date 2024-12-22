@@ -14,7 +14,8 @@
 	import Chat from '$lib/components/Chat.svelte';
 
 	let { data } = $props();
-	let markdown = $state(data.raw);
+	let markdown = $state(data.markdown);
+	let userId = data.user_id;
 
 	let selectedProjectIndex = $state(0);
 	let selectedMilestoneIndex = $state(0);
@@ -163,6 +164,7 @@
 			selectedProjectIndex = i;
 			selectedMilestoneIndex = 0;
 		}}
+		{userId}
 	/>
 
 	<div class="app-container">

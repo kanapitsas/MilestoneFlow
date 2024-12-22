@@ -1,7 +1,21 @@
 <script>
 	import ProjectSelector from './ProjectSelector.svelte';
 
-	let { parsedProjects, selectedProjectIndex, onselectProject } = $props();
+	let { parsedProjects, selectedProjectIndex, onselectProject, userId } = $props();
+
+	async function updateUserId(newId) {
+		const res = await fetch('/api/user-id', {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ newId })
+		});
+		if (res.ok) {
+			location.reload();
+			// or you could do something fancier: navigation.goto('/')
+		} else {
+			alert('Failed to update user ID');
+		}
+	}
 </script>
 
 <nav class="navbar">
@@ -16,6 +30,20 @@
 				<span class="title-part">Flow</span>
 			</span>
 		</h1>
+	</div>
+	<div style="display: flex; align-items: center; gap: 0.5rem">
+		<div>User ID:</div>
+		<input
+			type="text"
+			bind:value={userId}
+			onkeydown={(e) => {
+				if (e.key === 'Enter') {
+					updateUserId(userId);
+				}
+			}}
+			onblur={() => updateUserId(userId)}
+			style="width: 220px"
+		/>
 	</div>
 	<div class="nav-section links">
 		<a

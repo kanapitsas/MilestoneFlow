@@ -1,24 +1,38 @@
-import { readFile } from 'fs/promises';
-import { parseMarkdown } from '$lib/utils/parseMarkdown.js';
+// src/routes/+page.server.js
+import { getServerSupabaseClient } from '$lib/server/supabase.js';
 
-export async function load() {
-	try {
-		// Read the markdown file
-		const raw = await readFile('src/lib/data/projects.md', 'utf-8');
+/**
+ * The root +page.server.js, which loads the user’s
+ * markdown from Supabase or returns an empty default.
+ */
+export async function load({ locals }) {
+	const supabase = getServerSupabaseClient();
+	const user_id = locals.user_id;
 
-		// Parse the markdown into projects data
-		const projects = parseMarkdown(raw);
-		return {
-			raw,
-			projects
-		};
-	} catch (error) {
-		console.error('Error loading projects:', error);
+	// 1) Try to fetch user_data row
+	const { data, error } = await supabase
+		.from('user_data')
+		.select('markdown')
+		.eq('user_id', user_id)
+		.single();
 
-		// Return empty defaults if file reading fails
-		return {
-			raw: '',
-			projects: []
-		};
+	if (error) {
+		console.error('Supabase fetch error:', error);
 	}
+
+	let markdown = data?.markdown || '';
+
+	// Optional: If no row, we could create it
+	if (!data) {
+		const { error: insertError } = await supabase
+			.from('user_data')
+			.insert({ user_id, markdown: '' });
+		if (insertError) {
+			console.error('Error creating user_data row:', insertError);
+		}
+	}
+
+	return {
+		markdown
+	};
 }
