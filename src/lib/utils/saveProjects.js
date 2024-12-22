@@ -7,7 +7,8 @@ export async function saveProjects(markdown) {
 		});
 
 		if (!response.ok) {
-			throw new Error('Failed to save projects');
+			const error = await response.json();
+			throw new Error(error.message || 'Failed to save projects');
 		}
 
 		return true;
