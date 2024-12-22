@@ -34,6 +34,24 @@
 		)
 	);
 
+	async function createNewProject() {
+		const newProject = {
+			title: 'New Project',
+			milestones: [
+				{
+					title: 'Getting Started',
+					tasks: [{ name: 'Add your first task', done: false }]
+				}
+			]
+		};
+
+		const newProjects = [...projects, newProject];
+		await updateProjects(newProjects);
+		// Select the new project
+		selectedProjectIndex = newProjects.length - 1;
+		selectedMilestoneIndex = 0;
+	}
+
 	async function updateProjects(newProjects) {
 		try {
 			const newMarkdown = markdownFromProjects(newProjects);
@@ -171,8 +189,12 @@
 		parsedProjects={projects}
 		selectedProjectIndex={currentProjectIndex}
 		onselectProject={(i) => {
-			selectedProjectIndex = i;
-			selectedMilestoneIndex = 0;
+			if (i === projects.length) {
+				createNewProject();
+			} else {
+				selectedProjectIndex = i;
+				selectedMilestoneIndex = 0;
+			}
 		}}
 		{userId}
 	/>

@@ -1,9 +1,13 @@
-<!-- ProjectSelector.svelte -->
 <script>
 	let { parsedProjects = [], selectedProjectIndex = 0, onselectProject } = $props();
 
 	function handleSelect(event) {
 		onselectProject(+event.target.value);
+	}
+
+	function createNewProject() {
+		// Add a new project at the end and select it
+		onselectProject(parsedProjects.length);
 	}
 </script>
 
@@ -13,9 +17,26 @@
 			<option value={i}>{project.title}</option>
 		{/each}
 	</select>
+
+	<button
+		class="new-project-btn"
+		onclick={createNewProject}
+		title="Create new project"
+		aria-label="Create new project"
+	>
+		<svg viewBox="0 0 24 24" width="20" height="20">
+			<path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+		</svg>
+	</button>
 </div>
 
 <style>
+	.project-selector {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+	}
+
 	select {
 		appearance: none;
 		padding: 0.5rem 1rem;
@@ -40,5 +61,24 @@
 		outline: none;
 		border-color: var(--primary);
 		box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+	}
+
+	.new-project-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-md);
+		color: var(--text-secondary);
+		cursor: pointer;
+		transition: var(--transition);
+	}
+
+	.new-project-btn:hover {
+		background: var(--surface-hover);
+		color: var(--text);
+		border-color: var(--primary);
 	}
 </style>
