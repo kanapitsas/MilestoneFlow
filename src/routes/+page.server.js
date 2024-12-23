@@ -1,5 +1,6 @@
 // src/routes/+page.server.js
 import { getServerSupabaseClient } from '$lib/server/supabase.js';
+import { TUTORIAL_PROJECT } from '$lib/data/tutorialProject.js';
 
 /**
  * The root +page.server.js, which loads the user’s
@@ -20,20 +21,25 @@ export async function load({ locals }) {
 		console.error('Supabase fetch error:', error);
 	}
 
-	let markdown = data?.markdown || '';
-
-	// Optional: If no row, we could create it
 	if (!data) {
-		const { error: insertError } = await supabase
-			.from('user_data')
-			.insert({ user_id, markdown: '' });
+		// Insert tutorial project for new user
+		const { error: insertError } = await supabase.from('user_data').insert({
+			user_id,
+			markdown: TUTORIAL_PROJECT
+		});
+
 		if (insertError) {
 			console.error('Error creating user_data row:', insertError);
 		}
+
+		return {
+			markdown: TUTORIAL_PROJECT,
+			user_id
+		};
 	}
 
 	return {
-		markdown,
+		markdown: data.markdown,
 		user_id
 	};
 }
