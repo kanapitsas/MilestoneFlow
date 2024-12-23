@@ -9,16 +9,16 @@
 	import ColumnHeader from './ColumnHeader.svelte';
 
 	let { markdown, onreplaceMarkdown, onupdateMilestoneByName, projectName } = $props();
-
 	let userInput = $state('');
 	let loadedProjects = $state(new Set());
 	let projectChats = $state({});
 	let isLoading = $state(false);
 	let isLoadingHistory = $state(false);
 	let currentResponse = $state('');
-
 	// Derive the messages for this projectName
 	let messages = $derived(projectChats[projectName] || []);
+
+	let messagesContainer; //ref to message div for auto-scroll
 
 	// Fetch chat history
 	$effect(async () => {
@@ -46,6 +46,13 @@
 			}
 		} catch (error) {
 			console.error('Error loading chat history:', error);
+		}
+	});
+
+	$effect(() => {
+		// scroll whe messages change
+		if (messages.length > 0) {
+			setTimeout(scrollToBottom, 0);
 		}
 	});
 
@@ -96,10 +103,12 @@
 			const decoder = new TextDecoder();
 
 			while (true) {
+				// streaming response
 				const { value, done } = await reader.read();
 				if (done) break;
 				accumulated += decoder.decode(value);
 				currentResponse = accumulated;
+				scrollToBottom();
 			}
 
 			const parsed = parseChatResponse(accumulated);
@@ -143,6 +152,12 @@
 			console.error('Error clearing chat:', error);
 		}
 	}
+
+	function scrollToBottom() {
+		if (messagesContainer) {
+			messagesContainer.scrollTop = messagesContainer.scrollHeight;
+		}
+	}
 </script>
 
 <div class="chat-container">
@@ -151,7 +166,7 @@
 			<button class="clear-chat" onclick={clearChat}> Clear History </button>
 		{/if}
 	</ColumnHeader>
-	<div class="messages">
+	<div class="messages" bind:this={messagesContainer}>
 		{#if isLoadingHistory}
 			<div class="message system">
 				<div class="message-content">Loading chat history...</div>
