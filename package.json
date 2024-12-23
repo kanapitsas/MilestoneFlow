@@ -28,6 +28,7 @@
 	"dependencies": {
 		"@supabase/supabase-js": "^2.47.10",
 		"@sveltejs/adapter-vercel": "^5.5.2",
+		"@vercel/analytics": "^1.4.1",
 		"openai": "^4.77.0",
 		"uuid": "^11.0.3"
 	}

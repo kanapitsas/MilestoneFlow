@@ -3,6 +3,9 @@
 	 * Expects a `data` prop with { raw } containing your project markdown.
 	 * Uses parseMarkdown(), markdownFromProjects(), saveProjects() to handle state.
 	 */
+	import { injectAnalytics } from '@vercel/analytics/sveltekit';
+	injectAnalytics(); // Vercel Analytics
+
 	import '../app.css';
 	import { parseMarkdown } from '$lib/utils/parseMarkdown.js';
 	import { markdownFromProjects } from '$lib/utils/markdownFromProjects.js';
