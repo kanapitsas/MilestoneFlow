@@ -22,12 +22,6 @@
 
 	// Fetch chat history
 	$effect(async () => {
-		console.log(
-			'fetching chat history for project:',
-			projectName,
-			'loaded projects:',
-			Array.from(loadedProjects)
-		);
 		if (!projectName || loadedProjects.has(projectName)) return;
 
 		try {
