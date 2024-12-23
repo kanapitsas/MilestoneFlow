@@ -1,38 +1,107 @@
-# sv
+# MilestoneFlow
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+MilestoneFlow is a modern, AI-powered project management tool that helps users organize projects through milestones and tasks. Built with SvelteKit and integrated with GPT-4, it provides an intuitive interface for managing project workflows while leveraging AI assistance for project planning and task organization.
 
-## Creating a project
+![MilestoneFlow Screenshot](screenshot.png)
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Features
 
-```bash
-# create a new project in the current directory
-npx sv create
+### 🎯 Core Functionality
+- **Project Management**: Create and manage multiple projects with milestones and tasks
+- **Drag-and-Drop Tasks**: Intuitive task reordering within milestones
+- **Progress Tracking**: Visual progress indicators for milestones and tasks
+- **Real-time Updates**: Instant UI updates when modifying project structure
 
-# create a new project in my-app
-npx sv create my-app
+### 🤖 AI Integration
+- **Intelligent Assistant**: GPT-4o powered chat interface for project management
+- **Context-Aware**: AI understands your project structure and can make targeted updates
+- **Natural Language**: Make changes to your project structure through natural conversation
+
+### 💾 Data Persistence
+- **Supabase Backend**: Secure data storage with Supabase
+- **User Management**: UUID-based user identification
+- **Chat History**: Persistent chat history per project
+- **Real-time Sync**: Automatic saving of all changes
+
+### 🎨 User Interface
+- **Modern Design**: Clean, intuitive interface with careful attention to detail
+- **Responsive Layout**: Adapts to different screen sizes
+- **Visual Feedback**: Smooth animations and transitions
+
+## Technical Stack
+
+- **Frontend**: SvelteKit (deployed on Vercel)
+- **Database**: Supabase
+- **AI**: GPT-4o
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or later)
+- npm or pnpm
+- Supabase account
+- OpenAI API key
+
+### Environment Setup
+
+Create a `.env` file in the root directory:
+
+```env
+PUBLIC_SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-## Developing
+### Database Setup
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Create the following tables in your Supabase database:
+
+```sql
+-- User data table
+create table user_data (
+  user_id text primary key,
+  markdown text default '',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Chat messages table
+create table chat_messages (
+  id uuid default uuid_generate_v4() primary key,
+  user_id text not null,
+  project_title text not null,
+  role text not null,
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+```
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/milestone-flow.git
+cd milestone-flow
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## Usage
 
-To create a production version of your app:
+### Creating a Project
+1. Click the "+" button in the project selector
+2. Enter your project details
+3. Start adding milestones and tasks
 
-```bash
-npm run build
-```
+### Using AI Assistance
+1. Describe your desired changes in natural language in the chat
+2. AI will update your project structure accordingly
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+### Managing Tasks
+- Click checkboxes to mark tasks complete
+- Drag and drop tasks to reorder
+- Use the chat to add or modify tasks

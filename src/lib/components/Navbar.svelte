@@ -122,11 +122,7 @@
 		height: 24px;
 		border-radius: 50%;
 		object-fit: cover;
-		box-shadow:
-			0 0 0 2px var(--surface),
-			0 0 0 3px var(--accent-bg);
-		transition: var(--transition);
-		margin: 0 -2px; /* Slightly reduce the gap between text and logo */
+		margin: 0 -1px; /* Slightly reduce the gap between text and logo */
 	}
 
 	.right-section {
