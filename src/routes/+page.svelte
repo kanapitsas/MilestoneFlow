@@ -85,27 +85,18 @@
 		const oldTitle = currentProject?.title;
 		const newTitle = newProject.title;
 
-		const newProjects = projects.map((p, i) => (i === currentProjectIndex ? newProject : p));
-
-		// First update the project structure
-		await updateProjects(newProjects);
-
-		// If the title changed, migrate chat history
+		// If title changed, migrate chat history before updating project
 		if (oldTitle && newTitle && oldTitle !== newTitle) {
-			try {
-				const response = await fetch('/api/chat-migrate', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ oldTitle, newTitle })
-				});
-
-				if (!response.ok) {
-					throw new Error('Failed to migrate chat history');
-				}
-			} catch (error) {
-				console.error('Error migrating chat history:', error);
-			}
+			await fetch('/api/chat-migrate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ oldTitle, newTitle })
+			});
 		}
+
+		// Update the project structure
+		const newProjects = projects.map((p, i) => (i === currentProjectIndex ? newProject : p));
+		await updateProjects(newProjects);
 	}
 
 	async function updateMilestoneByName(milestoneMarkdown) {
