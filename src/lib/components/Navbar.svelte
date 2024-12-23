@@ -184,12 +184,4 @@
 		width: 20px;
 		height: 20px;
 	}
-
-	/* Optional: Add subtle hover effect to the logo */
-	.logo:hover {
-		transform: scale(1.05);
-		box-shadow:
-			0 0 0 2px var(--surface),
-			0 0 0 3px var(--primary);
-	}
 </style>

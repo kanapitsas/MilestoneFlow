@@ -11,25 +11,39 @@
 	let { markdown, onreplaceMarkdown, onupdateMilestoneByName, projectName } = $props();
 
 	let userInput = $state('');
+	let loadedProjects = $state(new Set());
 	let projectChats = $state({});
 	let isLoading = $state(false);
+	let isLoadingHistory = $state(false);
 	let currentResponse = $state('');
 
 	// Derive the messages for this projectName
 	let messages = $derived(projectChats[projectName] || []);
 
+	// Fetch chat history
 	$effect(async () => {
-		if (!projectName) return;
+		console.log(
+			'fetching chat history for project:',
+			projectName,
+			'loaded projects:',
+			Array.from(loadedProjects)
+		);
+		if (!projectName || loadedProjects.has(projectName)) return;
 
 		try {
 			const res = await fetch(`/api/chat?project=${encodeURIComponent(projectName)}`);
 			if (!res.ok) throw new Error('Failed to load chat history');
 
-			const { messages } = await res.json();
-			projectChats = {
-				...projectChats,
-				[projectName]: messages
-			};
+			const { messages: newMessages } = await res.json();
+
+			if (Array.isArray(newMessages)) {
+				projectChats = {
+					...projectChats,
+					[projectName]: newMessages
+				};
+				// Mark this project as loaded
+				loadedProjects = new Set([...loadedProjects, projectName]);
+			}
 		} catch (error) {
 			console.error('Error loading chat history:', error);
 		}
@@ -174,6 +188,15 @@
 		{/if}
 	</ColumnHeader>
 	<div class="messages" bind:this={messagesContainer} onscroll={handleScroll}>
+		{#if isLoadingHistory}
+			<div class="message system">
+				<div class="message-content">Loading chat history...</div>
+			</div>
+		{:else if messages.length === 0}
+			<div class="message system">
+				<div class="message-content">No messages yet. Start a conversation!</div>
+			</div>
+		{/if}
 		{#each messages as m}
 			<div class="message {m.role}">
 				<div class="message-role">{m.role}</div>
@@ -185,9 +208,7 @@
 			<div class="message assistant">
 				<div class="message-content">{currentResponse}</div>
 			</div>
-		{/if}
-
-		{#if isLoading && !currentResponse}
+		{:else if isLoading}
 			<div class="message assistant">
 				<div class="message-content loading">
 					<span class="dot"></span>

@@ -106,7 +106,10 @@ export async function GET({ url, locals }) {
 		const projectName = url.searchParams.get('project');
 		const user_id = locals.user_id;
 
+		console.log('Loading chat history:', { projectName, user_id }); // Debug log
+
 		if (!projectName || !user_id) {
+			console.log('Missing parameters:', { projectName, user_id }); // Debug log
 			return json({ error: 'Missing parameters' }, { status: 400 });
 		}
 
@@ -118,9 +121,13 @@ export async function GET({ url, locals }) {
 			.eq('project_title', projectName)
 			.order('created_at', { ascending: true });
 
-		if (error) throw error;
+		if (error) {
+			console.error('Supabase query error:', error); // Debug log
+			throw error;
+		}
 
-		return json({ messages: data });
+		console.log('Chat history loaded:', data?.length, 'messages'); // Debug log
+		return json({ messages: data || [] });
 	} catch (error) {
 		console.error('Error loading chat history:', error);
 		return json({ error: 'Failed to load chat history' }, { status: 500 });

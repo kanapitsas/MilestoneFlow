@@ -35,8 +35,19 @@
 	);
 
 	async function createNewProject() {
+		// Generate a unique default name like "New Project 1", "New Project 2", etc.
+		const baseTitle = 'New Project';
+		let counter = 1;
+		let newTitle = baseTitle;
+
+		// Find a unique title
+		while (projects.some((p) => p.title === newTitle)) {
+			counter++;
+			newTitle = `${baseTitle} ${counter}`;
+		}
+
 		const newProject = {
-			title: 'New Project',
+			title: newTitle,
 			milestones: [
 				{
 					title: 'Getting Started',
@@ -47,7 +58,6 @@
 
 		const newProjects = [...projects, newProject];
 		await updateProjects(newProjects);
-		// Select the new project
 		selectedProjectIndex = newProjects.length - 1;
 		selectedMilestoneIndex = 0;
 	}
@@ -71,8 +81,31 @@
 	async function replaceCurrentProject(newProjectMarkdown) {
 		const [newProject] = parseMarkdown(newProjectMarkdown);
 		if (!newProject) return;
+
+		const oldTitle = currentProject?.title;
+		const newTitle = newProject.title;
+
 		const newProjects = projects.map((p, i) => (i === currentProjectIndex ? newProject : p));
+
+		// First update the project structure
 		await updateProjects(newProjects);
+
+		// If the title changed, migrate chat history
+		if (oldTitle && newTitle && oldTitle !== newTitle) {
+			try {
+				const response = await fetch('/api/chat-migrate', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ oldTitle, newTitle })
+				});
+
+				if (!response.ok) {
+					throw new Error('Failed to migrate chat history');
+				}
+			} catch (error) {
+				console.error('Error migrating chat history:', error);
+			}
+		}
 	}
 
 	async function updateMilestoneByName(milestoneMarkdown) {
