@@ -49,37 +49,6 @@
 		}
 	});
 
-	// Auto-scroll refs and state
-	let messagesContainer;
-	let isAutoScrolling = $state(false);
-	let lastScrollTop = $state(0);
-
-	// Auto-scroll when messages change or during streaming
-	$effect(() => {
-		if (!messagesContainer) return;
-
-		// Only auto-scroll if we're already at the bottom or streaming
-		const isAtBottom =
-			Math.abs(
-				messagesContainer.scrollHeight -
-					messagesContainer.clientHeight -
-					messagesContainer.scrollTop
-			) < 50;
-
-		if (isAutoScrolling || isAtBottom || currentResponse) {
-			messagesContainer.scrollTop = messagesContainer.scrollHeight;
-		}
-	});
-
-	function handleScroll(e) {
-		const { scrollTop } = e.target;
-		// Update auto-scroll based on user scrolling up/down
-		if (Math.abs(scrollTop - lastScrollTop) > 50) {
-			isAutoScrolling = scrollTop > lastScrollTop;
-			lastScrollTop = scrollTop;
-		}
-	}
-
 	/**
 	 * Detect whether the final text from the LLM is a full project or milestones.
 	 */
@@ -109,7 +78,6 @@
 		updateProjectChat(newMessages);
 		isLoading = true;
 		currentResponse = '';
-		isAutoScrolling = true; // Enable auto-scroll when sending message
 
 		let accumulated = '';
 		try {
@@ -156,10 +124,6 @@
 		} finally {
 			isLoading = false;
 			currentResponse = '';
-			// Keep auto-scroll enabled for a short while after completion
-			setTimeout(() => {
-				isAutoScrolling = false;
-			}, 1000);
 		}
 	}
 
@@ -187,7 +151,7 @@
 			<button class="clear-chat" onclick={clearChat}> Clear History </button>
 		{/if}
 	</ColumnHeader>
-	<div class="messages" bind:this={messagesContainer} onscroll={handleScroll}>
+	<div class="messages">
 		{#if isLoadingHistory}
 			<div class="message system">
 				<div class="message-content">Loading chat history...</div>
