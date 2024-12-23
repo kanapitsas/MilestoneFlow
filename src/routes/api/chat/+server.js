@@ -48,7 +48,7 @@ export async function POST({ request, locals }) {
 		});
 
 		const completion = await openai.chat.completions.create({
-			model: 'gpt-4',
+			model: 'gpt-4o',
 			messages: [
 				{ role: 'system', content: SYSTEM_PROMPT },
 				{
@@ -124,5 +124,30 @@ export async function GET({ url, locals }) {
 	} catch (error) {
 		console.error('Error loading chat history:', error);
 		return json({ error: 'Failed to load chat history' }, { status: 500 });
+	}
+}
+
+export async function DELETE({ url, locals }) {
+	try {
+		const projectName = url.searchParams.get('project');
+		const user_id = locals.user_id;
+
+		if (!projectName || !user_id) {
+			return json({ error: 'Missing parameters' }, { status: 400 });
+		}
+
+		const supabase = getServerSupabaseClient();
+		const { error } = await supabase
+			.from('chat_messages')
+			.delete()
+			.eq('user_id', user_id)
+			.eq('project_title', projectName);
+
+		if (error) throw error;
+
+		return json({ success: true });
+	} catch (error) {
+		console.error('Error clearing chat history:', error);
+		return json({ error: 'Failed to clear chat history' }, { status: 500 });
 	}
 }
