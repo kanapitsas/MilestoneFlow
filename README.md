@@ -2,7 +2,7 @@
 
 MilestoneFlow is a modern, AI-powered project management tool that helps users organize projects through milestones and tasks. Built with SvelteKit and integrated with GPT-4, it provides an intuitive interface for managing project workflows while leveraging AI assistance for project planning and task organization.
 
-You can find a hosted instance at [http://milestoneflow.rkan.org](milestoneflow.rkan.org). Keep in mind this is an early release which might be buggy and incomplete.
+You can find a hosted instance at [milestoneflow.rkan.org](https://milestoneflow.rkan.org). Keep in mind this is an early release which might be buggy and incomplete.
 
 ![MilestoneFlow Screenshot](screenshot.png)
 
