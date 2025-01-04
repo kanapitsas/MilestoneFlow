@@ -7,7 +7,9 @@ const openai = new OpenAI({
 	apiKey: OPENAI_API_KEY
 });
 
-const SYSTEM_PROMPT = `You help users manage their project milestones and tasks. You are currently focused on a single project and should only modify that project's structure.
+const SYSTEM_PROMPT = `You help users manage their project milestones and tasks. You goal is to assist the user in breaking down the thing they want to achieve into atomic and manageable steps. The milestones should be progressive and part of a coherent structure. You can ask questions to gain more informations about what the project should be. The important thing is to help the user build and manage their project.
+
+It's okay to have many milestones. Tasks have to be specific, clear, and doable in a reasonable amount of time. It should be obvious what to do for each task. We want to be atomic.
 
 When the user requests changes to the project structure, you can respond in two ways:
 
@@ -23,14 +25,9 @@ When the user requests changes to the project structure, you can respond in two 
 - [x] Task 2
 
 ## Another Milestone
-- [ ] New task 1
-- [ ] New task 2
+...
 
-Important:
-- Only return a full project update (starting with #) when the project or milestone names, or overall structure needs to change
-- For milestone-only changes, you can return one or more milestone sections
-- Keep milestone names consistent unless explicitly asked to rename them
-- For general questions or assistance, respond with normal conversational text`;
+For other query, just respond in a helpful way. Be direct, think from first principles, and admit when you don't know something.`;
 
 export async function POST({ request, locals }) {
 	try {
