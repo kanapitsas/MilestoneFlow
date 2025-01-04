@@ -51,15 +51,44 @@
 	});
 
 	/**
-	 * Detect whether the final text from the LLM is a full project or milestones.
+	 * Detect whether the final text from the LLM contains a full project or milestones.
+	 * Handles cases where there's explanatory text before the markdown.
 	 */
 	function parseChatResponse(fullText) {
 		const text = fullText.trim();
-		if (text.startsWith('# ')) {
-			return { type: 'project', markdown: text };
-		} else if (text.startsWith('## ')) {
-			return { type: 'milestones', markdown: text };
+		// Split into lines and find the first line that starts with # or ##
+		const lines = text.split('\n');
+
+		// Find first line starting with # (but not ##)
+		const projectLineIndex = lines.findIndex((line) => line.trim().match(/^#\s[^#]/));
+
+		// Find first line starting with ##
+		const milestoneLineIndex = lines.findIndex((line) => line.trim().startsWith('## '));
+
+		if (projectLineIndex !== -1) {
+			// Filter and join all valid markdown lines from the project header onwards
+			const markdown = lines
+				.slice(projectLineIndex)
+				.filter((line) => {
+					const trimmed = line.trim();
+					return trimmed.startsWith('#') || trimmed.startsWith('-') || trimmed === ''; // Keep empty lines for formatting
+				})
+				.join('\n')
+				.trim();
+			return { type: 'project', markdown };
+		} else if (milestoneLineIndex !== -1) {
+			// Filter and join all valid markdown lines from the first milestone onwards
+			const markdown = lines
+				.slice(milestoneLineIndex)
+				.filter((line) => {
+					const trimmed = line.trim();
+					return trimmed.startsWith('##') || trimmed.startsWith('-') || trimmed === ''; // Keep empty lines for formatting
+				})
+				.join('\n')
+				.trim();
+			return { type: 'milestones', markdown };
 		}
+
 		return null;
 	}
 
